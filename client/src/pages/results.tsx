@@ -1,9 +1,12 @@
 import { useRoute, useLocation } from "wouter";
-import { Download, Plus, Lightbulb, ArrowLeft, Home } from "lucide-react";
+import { Download, Plus, Lightbulb, ArrowLeft, Home, Share2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import type { AnalysisResult } from "@shared/schema";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { useState } from "react";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))'];
 
@@ -11,11 +14,50 @@ export default function Results() {
   const [, params] = useRoute("/results/:id");
   const [, setLocation] = useLocation();
   const analysisId = params?.id;
+  const { toast } = useToast();
+  const [isSharing, setIsSharing] = useState(false);
 
   const { data: analysis, isLoading } = useQuery<AnalysisResult>({
     queryKey: ['/api/analysis', analysisId],
     enabled: !!analysisId,
   });
+
+  const shareMutation = useMutation({
+    mutationFn: async () => {
+      const res = await apiRequest("POST", `/api/share/${analysisId}`, {});
+      return res.json();
+    },
+    onSuccess: async (data) => {
+      const shareUrl = `${window.location.origin}${data.shareUrl}`;
+      
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        toast({
+          title: "✓ 링크가 복사되었어요!",
+          description: "24시간 동안 유효합니다",
+        });
+      } catch (err) {
+        toast({
+          title: "링크가 생성되었습니다",
+          description: shareUrl,
+        });
+      }
+      setIsSharing(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "공유 링크 생성 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+      setIsSharing(false);
+    },
+  });
+
+  const handleShare = () => {
+    setIsSharing(true);
+    shareMutation.mutate();
+  };
 
   if (isLoading || !analysis) {
     return (
@@ -233,6 +275,37 @@ export default function Results() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+
+        {/* Share Section */}
+        <div className="bg-primary/10 rounded-2xl p-8 text-center fade-in-up mt-8" style={{ animationDelay: '0.45s' }}>
+          <div className="max-w-2xl mx-auto">
+            <h3 className="text-2xl font-bold text-foreground mb-3">
+              📱 링크로 공유하기
+            </h3>
+            <p className="text-muted-foreground mb-6">
+              친구에게 내 소통 스타일 보여주기
+            </p>
+            <Button
+              onClick={handleShare}
+              disabled={isSharing}
+              className="bg-primary text-primary-foreground hover:bg-secondary transform hover:scale-105 transition-all shadow-lg hover:shadow-xl"
+              size="lg"
+              data-testid="button-share"
+            >
+              {isSharing ? (
+                <>
+                  <div className="w-5 h-5 mr-2 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin"></div>
+                  생성 중...
+                </>
+              ) : (
+                <>
+                  <Share2 className="w-5 h-5 mr-2" />
+                  공유 링크 생성
+                </>
+              )}
+            </Button>
           </div>
         </div>
 

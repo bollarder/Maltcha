@@ -8,6 +8,7 @@ import Landing from "@/pages/landing";
 import Upload from "@/pages/upload";
 import Loading from "@/pages/loading";
 import Results from "@/pages/results";
+import SharedResult from "@/pages/shared-result";
 
 function Router() {
   return (
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/upload" component={Upload} />
       <Route path="/loading/:id" component={Loading} />
       <Route path="/results/:id" component={Results} />
+      <Route path="/result/:shareId" component={SharedResult} />
       <Route component={NotFound} />
     </Switch>
   );
