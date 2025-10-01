@@ -16,17 +16,40 @@ export default function Landing() {
               <span className="text-xl font-bold text-foreground">Maltcha</span>
             </div>
             <div className="hidden md:flex items-center space-x-8">
-              <a href="#features" className="text-muted-foreground hover:text-foreground transition-colors">기능</a>
-              <a href="#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">사용 방법</a>
+              <a
+                href="#features"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                기능
+              </a>
+              <a
+                href="#how-it-works"
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
+                사용 방법
+              </a>
               <Link href="/upload">
                 <Button className="bg-primary text-primary-foreground hover:bg-secondary">
                   시작하기
                 </Button>
               </Link>
             </div>
-            <button className="md:hidden text-foreground" data-testid="button-mobile-menu">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            <button
+              className="md:hidden text-foreground"
+              data-testid="button-mobile-menu"
+            >
+              <svg
+                className="w-6 h-6"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
               </svg>
             </button>
           </div>
@@ -36,44 +59,60 @@ export default function Landing() {
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{ 
-            backgroundImage: 'radial-gradient(circle at 25px 25px, hsl(var(--primary)) 2%, transparent 0%), radial-gradient(circle at 75px 75px, hsl(var(--primary)) 2%, transparent 0%)', 
-            backgroundSize: '100px 100px' 
-          }}></div>
+          <div
+            className="absolute inset-0"
+            style={{
+              backgroundImage:
+                "radial-gradient(circle at 25px 25px, hsl(var(--primary)) 2%, transparent 0%), radial-gradient(circle at 75px 75px, hsl(var(--primary)) 2%, transparent 0%)",
+              backgroundSize: "100px 100px",
+            }}
+          ></div>
         </div>
-        
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 relative">
           <div className="text-center fade-in-up">
             <div className="inline-flex items-center px-4 py-2 bg-accent rounded-full text-sm font-medium text-accent-foreground mb-8">
               <TrendingUp className="w-4 h-4 mr-2" />
               AI 기반 대화 분석
             </div>
-            
+
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
-              카카오톡 대화를<br/>
+              소중한 사람과의 대화를
+              <br />
               <span className="text-primary">깊이 있게 분석</span>하세요
             </h1>
-            
+
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto">
-              Maltcha는 AI를 활용하여 카카오톡 대화 내역을 분석하고,<br className="hidden md:block"/>
-              대화 패턴, 감정, 참여도를 시각화된 인사이트로 제공합니다.
+              Maltcha는 AI를 통해 대화 내역을 분석해서
+              <br className="hidden md:block" />
+              소중한 사람과 티키타카가 잘 되도록 합니다.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <Link href="/upload">
-                <Button 
-                  size="lg" 
+                <Button
+                  size="lg"
                   className="bg-primary text-primary-foreground hover:bg-secondary transform hover:scale-105 transition-all shadow-lg hover:shadow-xl"
                   data-testid="button-start"
                 >
                   무료로 시작하기
-                  <svg className="inline-block w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                  <svg
+                    className="inline-block w-5 h-5 ml-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M13 7l5 5m0 0l-5 5m5-5H6"
+                    />
                   </svg>
                 </Button>
               </Link>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="lg"
                 className="border-2"
                 data-testid="button-demo"
@@ -84,9 +123,9 @@ export default function Landing() {
           </div>
 
           <div className="mt-16 md:mt-24">
-            <img 
-              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&h=900" 
-              alt="Conversation analytics dashboard" 
+            <img
+              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&h=900"
+              alt="Conversation analytics dashboard"
               className="rounded-2xl shadow-2xl w-full"
             />
           </div>
@@ -97,8 +136,12 @@ export default function Landing() {
       <section id="features" className="py-20 bg-muted/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">주요 기능</h2>
-            <p className="text-lg text-muted-foreground">강력한 AI 분석으로 대화의 숨겨진 인사이트를 발견하세요</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              주요 기능
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              강력한 AI 분석으로 대화의 숨겨진 인사이트를 발견하세요
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
@@ -106,26 +149,48 @@ export default function Landing() {
               <div className="w-12 h-12 bg-accent dark:bg-accent rounded-xl flex items-center justify-center mb-6">
                 <BarChart3 className="w-6 h-6 text-primary dark:text-primary" />
               </div>
-              <h3 className="text-xl font-semibold text-foreground dark:text-foreground mb-3">대화 통계 분석</h3>
-              <p className="text-muted-foreground dark:text-muted-foreground">메시지 빈도, 참여도, 시간대별 패턴을 시각화된 차트로 확인하세요.</p>
+              <h3 className="text-xl font-semibold text-foreground dark:text-foreground mb-3">
+                의미 있는 데이터 분석
+              </h3>
+              <p className="text-muted-foreground dark:text-muted-foreground">
+                관계 관리에 필요한 데이터를 뽑아서 정리해요.
+              </p>
             </div>
 
             <div className="bg-card dark:bg-card rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
               <div className="w-12 h-12 bg-accent dark:bg-accent rounded-xl flex items-center justify-center mb-6">
-                <svg className="w-6 h-6 text-primary dark:text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                <svg
+                  className="w-6 h-6 text-primary dark:text-primary"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-xl font-semibold text-foreground dark:text-foreground mb-3">감정 분석</h3>
-              <p className="text-muted-foreground dark:text-muted-foreground">AI가 대화의 감정 톤을 분석하여 긍정, 부정, 중립 등을 파악합니다.</p>
+              <h3 className="text-xl font-semibold text-foreground dark:text-foreground mb-3">
+                상황 맥락적 심층 분석
+              </h3>
+              <p className="text-muted-foreground dark:text-muted-foreground">
+                AI가 대화의 맥락과 분위기를 분석하여 관계를 진단해요.
+              </p>
             </div>
 
             <div className="bg-card dark:bg-card rounded-2xl p-8 shadow-lg hover:shadow-xl transition-all hover:-translate-y-1">
               <div className="w-12 h-12 bg-accent dark:bg-accent rounded-xl flex items-center justify-center mb-6">
                 <Clock className="w-6 h-6 text-primary dark:text-primary" />
               </div>
-              <h3 className="text-xl font-semibold text-foreground dark:text-foreground mb-3">시간대 분석</h3>
-              <p className="text-muted-foreground dark:text-muted-foreground">대화가 가장 활발한 시간대와 요일을 분석하여 패턴을 발견하세요.</p>
+              <h3 className="text-xl font-semibold text-foreground dark:text-foreground mb-3">
+                실생황 대화 비서
+              </h3>
+              <p className="text-muted-foreground dark:text-muted-foreground">
+                난감한 상황을 피하고 더 나은 관계를 맺도록 제안해요.
+              </p>
             </div>
           </div>
         </div>
@@ -135,33 +200,55 @@ export default function Landing() {
       <section id="how-it-works" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">사용 방법</h2>
-            <p className="text-lg text-muted-foreground">3단계로 간편하게 대화를 분석하세요</p>
+            <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              사용 방법
+            </h2>
+            <p className="text-lg text-muted-foreground">
+              3단계로 간편하게 대화를 분석하세요
+            </p>
           </div>
 
           <div className="grid md:grid-cols-3 gap-12">
             <div className="text-center">
               <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-primary-foreground">1</span>
+                <span className="text-2xl font-bold text-primary-foreground">
+                  1
+                </span>
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-3">파일 업로드</h3>
-              <p className="text-muted-foreground">카카오톡 대화 내보내기로 생성된 txt 파일을 업로드하세요.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-3">
+                파일 업로드
+              </h3>
+              <p className="text-muted-foreground">
+                카카오톡 대화 내보내기로 생성된 txt 파일을 업로드하세요.
+              </p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-primary-foreground">2</span>
+                <span className="text-2xl font-bold text-primary-foreground">
+                  2
+                </span>
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-3">AI 분석</h3>
-              <p className="text-muted-foreground">Claude AI가 3단계 프롬프팅으로 대화를 깊이 분석합니다.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-3">
+                AI 분석
+              </h3>
+              <p className="text-muted-foreground">
+                Maltcha AI가 3단계 프롬프팅으로 대화를 깊이 분석합니다.
+              </p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-primary-foreground">3</span>
+                <span className="text-2xl font-bold text-primary-foreground">
+                  3
+                </span>
               </div>
-              <h3 className="text-xl font-semibold text-foreground mb-3">결과 확인</h3>
-              <p className="text-muted-foreground">시각화된 차트와 인사이트로 대화 패턴을 확인하세요.</p>
+              <h3 className="text-xl font-semibold text-foreground mb-3">
+                결과 확인
+              </h3>
+              <p className="text-muted-foreground">
+                시각화된 차트와 인사이트로 대화 패턴을 확인하세요.
+              </p>
             </div>
           </div>
         </div>
@@ -177,7 +264,7 @@ export default function Landing() {
             무료로 시작하고, 대화의 새로운 인사이트를 발견하세요.
           </p>
           <Link href="/upload">
-            <Button 
+            <Button
               size="lg"
               className="bg-primary text-primary-foreground hover:bg-secondary transform hover:scale-105 transition-all shadow-lg hover:shadow-xl"
               data-testid="button-cta-start"
@@ -199,35 +286,100 @@ export default function Landing() {
                 </div>
                 <span className="text-xl font-bold">Maltcha</span>
               </div>
-              <p className="text-muted-foreground text-sm">AI 기반 대화 분석 플랫폼</p>
+              <p className="text-muted-foreground text-sm">
+                AI 기반 대화 분석 플랫폼
+              </p>
             </div>
             <div>
               <h4 className="font-semibold mb-4">제품</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#features" className="hover:text-foreground transition-colors">기능</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">가격</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">FAQ</a></li>
+                <li>
+                  <a
+                    href="#features"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    기능
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    가격
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    FAQ
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">회사</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">소개</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">블로그</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">채용</a></li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    소개
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    인스타그램
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    링크드인
+                  </a>
+                </li>
               </ul>
             </div>
             <div>
               <h4 className="font-semibold mb-4">지원</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li><a href="#" className="hover:text-foreground transition-colors">문의하기</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">개인정보처리방침</a></li>
-                <li><a href="#" className="hover:text-foreground transition-colors">이용약관</a></li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    문의하기
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    개인정보처리방침
+                  </a>
+                </li>
+                <li>
+                  <a
+                    href="#"
+                    className="hover:text-foreground transition-colors"
+                  >
+                    이용약관
+                  </a>
+                </li>
               </ul>
             </div>
           </div>
           <div className="mt-12 pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            <p>&copy; 2024 Maltcha. All rights reserved.</p>
+            <p>&copy; 2025 Maltcha. All rights reserved.</p>
           </div>
         </div>
       </footer>
