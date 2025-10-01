@@ -18,11 +18,12 @@ Preferred communication style: Simple, everyday language.
 
 **UI Framework**: shadcn/ui component library built on Radix UI primitives, styled with Tailwind CSS. The design system uses a custom color palette with primary green tones and supports dark mode.
 
-**Routing**: Client-side routing implemented with Wouter, a lightweight alternative to React Router. The application has four main routes:
+**Routing**: Client-side routing implemented with Wouter, a lightweight alternative to React Router. The application has five main routes:
 - `/` - Landing page with feature showcase
 - `/upload` - File upload interface
 - `/loading/:id` - Progress tracking during analysis
 - `/results/:id` - Results display with charts and insights
+- `/result/:shareId` - Shared results page for viewing analysis via share link
 
 **State Management**: React Query (@tanstack/react-query) for server state management, API caching, and automatic refetching. Local component state managed with React hooks.
 
@@ -41,26 +42,40 @@ Preferred communication style: Simple, everyday language.
 **API Design**: RESTful endpoints following a simple pattern:
 - `POST /api/analyze` - Initiates conversation analysis
 - `GET /api/analysis/:id` - Retrieves analysis results
+- `POST /api/share/:analysisId` - Creates a shareable link for an analysis (24-hour expiration)
+- `GET /api/share/:shareId` - Retrieves shared analysis data
 
 **Async Processing**: Analysis operations run asynchronously after returning an initial response. The client polls for completion status, allowing the server to handle long-running AI operations without blocking.
 
-**Error Handling**: Centralized error handling with appropriate HTTP status codes. Validation errors return 400, not-found errors return 404, and server errors return 500.
+**Error Handling**: Centralized error handling with appropriate HTTP status codes. Validation errors return 400, not-found errors return 404, expired shares return 410, and server errors return 500.
 
 ### Data Storage Solutions
 
-**Current Implementation**: In-memory storage using a Map-based implementation (`MemStorage` class). This is suitable for development and demonstration but data is lost on server restart.
+**Hybrid Implementation**: The application uses both in-memory storage and PostgreSQL database:
+- **In-memory storage** (`MemStorage` class) for analysis results - suitable for temporary data that doesn't need persistence
+- **PostgreSQL database** for shareable links - ensures cross-user sharing and 24-hour expiration tracking
 
 **Storage Interface**: Well-defined `IStorage` interface that abstracts storage operations, making it straightforward to swap implementations. The interface supports:
 - Creating analysis records
 - Retrieving analysis by ID
 - Updating analysis with results
 
-**Schema Design**: Zod schemas define the data structure for type safety and runtime validation:
-- `Message`: Individual chat messages with timestamp, participant, and content
-- `AnalysisResult`: Complete analysis including metadata, processing status, parsed messages, statistics, chart data, and AI insights
-- `InsertAnalysis`: Input schema for creating new analyses
+**Schema Design**: The application uses two schema systems:
 
-**Database Ready**: The project includes Drizzle ORM configuration pointing to PostgreSQL, indicating planned migration to persistent storage. The storage interface pattern enables this transition without requiring API changes.
+1. **Zod schemas** for runtime validation:
+   - `Message`: Individual chat messages with timestamp, participant, and content
+   - `AnalysisResult`: Complete analysis including metadata, processing status, parsed messages, statistics, chart data, and AI insights
+   - `InsertAnalysis`: Input schema for creating new analyses
+
+2. **Drizzle ORM schemas** for database tables:
+   - `shared_results`: Stores shareable analysis links with nanoid-generated IDs, analysis data (JSON), creation timestamp, 24-hour expiration timestamp, and view count tracking
+
+**Share Link System**: Implemented using PostgreSQL with the following features:
+- **Unique IDs**: Generated using nanoid(10) for short, URL-friendly identifiers
+- **24-hour expiration**: Automatically tracked via `expiresAt` timestamp; expired links return HTTP 410
+- **View counting**: Tracks how many times a shared link has been viewed
+- **Full analysis storage**: Stores complete analysis data as JSON for independent sharing
+- **Error handling**: Distinguishes between not found (404) and expired (410) states
 
 ### Authentication and Authorization
 
@@ -105,3 +120,9 @@ The parser extracts timestamps, participant names, and message content, handling
 - Sentiment distribution
 
 Data formatted specifically for Recharts visualization components on the frontend.
+
+**Social Media Integration**: 
+- **Open Graph tags**: Static OG tags in `client/index.html` for social media sharing previews
+- **OG image**: Matcha-themed image (`/og-image.jpg`) displayed when links are shared
+- **Dynamic meta tags**: Client-side JavaScript updates OG tags with absolute URLs for better compatibility
+- All shared links use consistent metadata for brand consistency
