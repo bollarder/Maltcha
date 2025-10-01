@@ -13,7 +13,7 @@ export function parseKakaoTalkFile(content: string): ParsedConversation {
   // KakaoTalk format: [Name] [Time] Message
   // Alternative format: 2024. 1. 15. 오후 9:30, Name : Message
   const kakaoRegex1 = /^\[(.+?)\]\s\[(.+?)\]\s(.+)$/;
-  const kakaoRegex2 = /^(\d{4}\.\s?\d{1,2}\.\s?\d{1,2}\.\s[오전|오후]\s\d{1,2}:\d{2}),\s(.+?)\s:\s(.+)$/;
+  const kakaoRegex2 = /^(\d{4}\.\s?\d{1,2}\.\s?\d{1,2}\.\s(?:오전|오후)\s\d{1,2}:\d{2}),\s(.+?)\s:\s(.+)$/;
   
   for (const line of lines) {
     if (!line.trim()) continue;
@@ -84,7 +84,7 @@ function parseKakaoDate(timestamp: string): Date | null {
   try {
     // Try to parse various KakaoTalk date formats
     // Format 1: "2024. 1. 15. 오후 9:30"
-    const match = timestamp.match(/(\d{4})\.\s?(\d{1,2})\.\s?(\d{1,2})\.\s([오전|오후])\s(\d{1,2}):(\d{2})/);
+    const match = timestamp.match(/(\d{4})\.\s?(\d{1,2})\.\s?(\d{1,2})\.\s(오전|오후)\s(\d{1,2}):(\d{2})/);
     if (match) {
       const [, year, month, day, meridiem, hour, minute] = match;
       let hours = parseInt(hour);
