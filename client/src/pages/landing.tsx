@@ -178,7 +178,7 @@ export default function Landing() {
                 상황 맥락적 심층 분석
               </h3>
               <p className="text-muted-foreground dark:text-muted-foreground">
-                AI가 대화의 맥락과 분위기를 분석하여 관계를 진단해요.
+                대화의 맥락과 분위기를 분석해서 관계를 진단해요.
               </p>
             </div>
 
@@ -190,7 +190,7 @@ export default function Landing() {
                 실생황 대화 비서
               </h3>
               <p className="text-muted-foreground dark:text-muted-foreground">
-                난감한 상황을 피하고 더 나은 관계를 맺도록 제안해요.
+                난감한 상황을 피해 더 나은 관계를 맺도록 도와요.
               </p>
             </div>
           </div>
@@ -231,10 +231,10 @@ export default function Landing() {
                 </span>
               </div>
               <h3 className="text-xl font-semibold text-foreground mb-3">
-                AI 분석
+                Maltcha AI 분석
               </h3>
               <p className="text-muted-foreground">
-                Maltcha AI가 3단계 프롬프팅으로 대화를 깊이 분석합니다.
+                3단계 프롬프팅으로 대화를 깊이 분석합니다.
               </p>
             </div>
 
