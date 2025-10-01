@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { MessageSquare, BarChart3, Clock, TrendingUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import matchaImage from "@assets/sung-shin-RJPRzSPEE-c-unsplash_1759319361113.jpg";
 
 export default function Landing() {
   return (
@@ -124,8 +125,8 @@ export default function Landing() {
 
           <div className="mt-16 md:mt-24">
             <img
-              src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?ixlib=rb-4.0.3&auto=format&fit=crop&w=1600&h=900"
-              alt="Conversation analytics dashboard"
+              src={matchaImage}
+              alt="Matcha tea ceremony - peaceful conversation analysis"
               className="rounded-2xl shadow-2xl w-full"
             />
           </div>
