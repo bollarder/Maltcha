@@ -187,7 +187,7 @@ export default function Landing() {
                 <Clock className="w-6 h-6 text-primary dark:text-primary" />
               </div>
               <h3 className="text-xl font-semibold text-foreground dark:text-foreground mb-3">
-                실생황 대화 비서
+                실생활 대화 비서
               </h3>
               <p className="text-muted-foreground dark:text-muted-foreground">
                 난감한 상황을 피해 더 나은 관계를 맺도록 도와요.
@@ -220,7 +220,7 @@ export default function Landing() {
                 파일 업로드
               </h3>
               <p className="text-muted-foreground">
-                카카오톡 대화 내보내기로 생성된 txt 파일을 업로드하세요.
+                대화 내보내기로 생성된 txt 파일을 업로드하세요.
               </p>
             </div>
 
