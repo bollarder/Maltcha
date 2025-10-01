@@ -1,6 +1,13 @@
 import { useState, useCallback } from "react";
 import { useLocation } from "wouter";
-import { Upload as UploadIcon, FileText, X, ArrowLeft, ArrowRight, Info } from "lucide-react";
+import {
+  Upload as UploadIcon,
+  FileText,
+  X,
+  ArrowLeft,
+  ArrowRight,
+  Info,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
@@ -33,44 +40,53 @@ export default function Upload() {
     },
   });
 
-  const handleFileSelect = useCallback((selectedFile: File) => {
-    if (!selectedFile.name.endsWith('.txt')) {
-      toast({
-        title: "잘못된 파일 형식",
-        description: "txt 파일만 업로드할 수 있습니다.",
-        variant: "destructive",
-      });
-      return;
-    }
+  const handleFileSelect = useCallback(
+    (selectedFile: File) => {
+      if (!selectedFile.name.endsWith(".txt")) {
+        toast({
+          title: "잘못된 파일 형식",
+          description: "txt 파일만 업로드할 수 있습니다.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    if (selectedFile.size > 10 * 1024 * 1024) {
-      toast({
-        title: "파일 크기 초과",
-        description: "파일 크기는 10MB를 초과할 수 없습니다.",
-        variant: "destructive",
-      });
-      return;
-    }
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        toast({
+          title: "파일 크기 초과",
+          description: "파일 크기는 10MB를 초과할 수 없습니다.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-    setFile(selectedFile);
-  }, [toast]);
+      setFile(selectedFile);
+    },
+    [toast],
+  );
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setDragOver(false);
-    
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile) {
-      handleFileSelect(droppedFile);
-    }
-  }, [handleFileSelect]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      setDragOver(false);
 
-  const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      handleFileSelect(selectedFile);
-    }
-  }, [handleFileSelect]);
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile) {
+        handleFileSelect(droppedFile);
+      }
+    },
+    [handleFileSelect],
+  );
+
+  const handleFileInput = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = e.target.files?.[0];
+      if (selectedFile) {
+        handleFileSelect(selectedFile);
+      }
+    },
+    [handleFileSelect],
+  );
 
   const handleAnalyze = async () => {
     if (!file) return;
@@ -94,17 +110,21 @@ export default function Upload() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 fade-in-up">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">대화 파일 업로드</h1>
-          <p className="text-lg text-muted-foreground">카카오톡 대화 내보내기 txt 파일을 업로드하세요</p>
+          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            대화 파일 업로드
+          </h1>
+          <p className="text-lg text-muted-foreground">
+            카카오톡 대화 내보내기 txt 파일을 업로드하세요
+          </p>
         </div>
 
         {/* Upload Zone */}
         <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
           <div
             className={`rounded-xl p-12 text-center cursor-pointer transition-all border-2 border-dashed ${
-              dragOver 
-                ? 'border-primary bg-accent dark:bg-accent transform scale-[1.02]' 
-                : 'border-border bg-transparent'
+              dragOver
+                ? "border-primary bg-accent dark:bg-accent transform scale-[1.02]"
+                : "border-border bg-transparent"
             }`}
             onDragOver={(e) => {
               e.preventDefault();
@@ -112,15 +132,21 @@ export default function Upload() {
             }}
             onDragLeave={() => setDragOver(false)}
             onDrop={handleDrop}
-            onClick={() => document.getElementById('file-input')?.click()}
+            onClick={() => document.getElementById("file-input")?.click()}
             data-testid="dropzone-upload"
           >
             <div className="mb-6">
               <UploadIcon className="w-16 h-16 mx-auto text-primary" />
             </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">파일을 드래그하거나 클릭하여 업로드</h3>
-            <p className="text-muted-foreground mb-4">지원 형식: .txt (카카오톡 대화 내보내기 파일)</p>
-            <p className="text-sm text-muted-foreground">최대 파일 크기: 10MB</p>
+            <h3 className="text-xl font-semibold text-foreground mb-2">
+              파일을 드래그하거나 클릭하여 업로드
+            </h3>
+            <p className="text-muted-foreground mb-4">
+              지원 형식: .txt (대화 내보내기 파일)
+            </p>
+            <p className="text-sm text-muted-foreground">
+              최대 파일 크기: 10MB
+            </p>
             <input
               id="file-input"
               type="file"
@@ -138,11 +164,21 @@ export default function Upload() {
                 <div className="flex items-center space-x-3">
                   <FileText className="w-8 h-8 text-primary" />
                   <div>
-                    <p className="font-medium text-foreground" data-testid="text-filename">{file.name}</p>
-                    <p className="text-sm text-muted-foreground" data-testid="text-filesize">{formatFileSize(file.size)}</p>
+                    <p
+                      className="font-medium text-foreground"
+                      data-testid="text-filename"
+                    >
+                      {file.name}
+                    </p>
+                    <p
+                      className="text-sm text-muted-foreground"
+                      data-testid="text-filesize"
+                    >
+                      {formatFileSize(file.size)}
+                    </p>
                   </div>
                 </div>
-                <button 
+                <button
                   className="text-destructive hover:text-destructive/80"
                   onClick={(e) => {
                     e.stopPropagation();
@@ -177,7 +213,7 @@ export default function Upload() {
           <Button
             variant="outline"
             size="lg"
-            onClick={() => setLocation('/')}
+            onClick={() => setLocation("/")}
             className="border-2"
             data-testid="button-back"
           >
@@ -191,7 +227,7 @@ export default function Upload() {
             className="bg-primary text-primary-foreground hover:bg-secondary"
             data-testid="button-analyze"
           >
-            {analyzeMutation.isPending ? '업로드 중...' : '분석 시작하기'}
+            {analyzeMutation.isPending ? "업로드 중..." : "분석 시작하기"}
             <ArrowRight className="w-5 h-5 ml-2" />
           </Button>
         </div>
