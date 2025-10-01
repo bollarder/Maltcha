@@ -258,10 +258,10 @@ export default function Landing() {
       <section className="py-20 bg-primary/10">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-6">
-            지금 바로 대화 분석을 시작하세요
+            대화는 서버에 저장되지 않아요
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            무료로 시작하고, 대화의 새로운 인사이트를 발견하세요.
+            안전하게 기기에서 대화를 분석하세요.
           </p>
           <Link href="/upload">
             <Button
