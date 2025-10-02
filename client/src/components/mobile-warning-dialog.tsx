@@ -28,9 +28,7 @@ export default function MobileWarningDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md bg-white">
         <DialogHeader>
-          <div className="flex items-center justify-center mb-2">
-            <span className="text-2xl font-bold text-gray-900">☕ Maltcha</span>
-          </div>
+          <div className="flex items-center justify-center mb-2"></div>
           <DialogTitle className="text-center text-2xl text-gray-900">
             📱 모바일이신가요?
           </DialogTitle>

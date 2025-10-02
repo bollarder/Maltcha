@@ -136,7 +136,7 @@ export default function Landing() {
               주요 기능
             </h2>
             <p className="text-lg text-muted-foreground">
-              강력한 AI 분석으로 대화의 숨겨진 인사이트를 발견하세요
+              Maltcha AI로 대화의 숨겨진 인사이트를 발견하세요
             </p>
           </div>
 
