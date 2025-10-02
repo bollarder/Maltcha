@@ -9,7 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, AlertCircle, Check, Loader2 } from "lucide-react";
 import JSZip from "jszip";
 import { apiRequest } from "@/lib/queryClient";
-import { MobileWarningDialog } from "@/components/mobile-warning-dialog";
+import MobileWarningDialog from "@/components/mobile-warning-dialog";
 
 export default function UploadPage() {
   const [, setLocation] = useLocation();
