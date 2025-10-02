@@ -6,10 +6,11 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, AlertCircle, Check, Loader2 } from "lucide-react";
+import { Upload, FileText, AlertCircle, Check, Loader2, HelpCircle } from "lucide-react";
 import JSZip from "jszip";
 import { apiRequest } from "@/lib/queryClient";
 import MobileWarningDialog from "@/components/mobile-warning-dialog";
+import MobileGuideVideoDialog from "@/components/mobile-GuideVideoDialog";
 
 export default function UploadPage() {
   const [, setLocation] = useLocation();
@@ -17,6 +18,7 @@ export default function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [showMobileWarning, setShowMobileWarning] = useState(false);
+  const [showMobileGuide, setShowMobileGuide] = useState(false);
 
   // 관계 유형 상태 관리
   const [selectedRelationships, setSelectedRelationships] = useState<string[]>([
@@ -276,6 +278,10 @@ export default function UploadPage() {
         open={showMobileWarning}
         onOpenChange={setShowMobileWarning}
       />
+      <MobileGuideVideoDialog
+        open={showMobileGuide}
+        onOpenChange={setShowMobileGuide}
+      />
 
       <div className="max-w-4xl mx-auto">
         {/* Header */}
@@ -286,6 +292,20 @@ export default function UploadPage() {
           <p className="text-lg text-muted-foreground">
             Maltcha AI를 통해 대화를 깊게 분석해보세요
           </p>
+          
+          {/* Mobile Guide Button */}
+          <div className="mt-4">
+            <Button
+              onClick={() => setShowMobileGuide(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              data-testid="button-mobile-guide"
+            >
+              <HelpCircle className="w-4 h-4" />
+              📱 모바일 가이드 보기
+            </Button>
+          </div>
         </div>
 
         {/* Relationship Type Selection */}
