@@ -5,10 +5,10 @@ import { useQuery } from "@tanstack/react-query";
 import type { AnalysisResult } from "@shared/schema";
 
 const TIPS = [
-  "대화 분석 결과는 참여자 수, 메시지 양, 대화 기간에 따라 달라질 수 있습니다.",
-  "AI는 대화의 맥락과 감정을 종합적으로 분석하여 인사이트를 제공합니다.",
-  "시간대별 분석을 통해 대화가 가장 활발한 시간을 확인할 수 있습니다.",
-  "참여자별 활동도를 비교하여 대화 참여 패턴을 파악할 수 있습니다.",
+  "대화 분석 결과는 참여자 수, 메시지 양, 대화 기간에 따라 달라질 수 있어요.",
+  "대화 속에는 말하지 않은 마음도 담겨 있어요.",
+  "가장 많이 나눈 시간대에서 두 분의 리듬을 발견할 수 있어요.",
+  "반복되는 단어들은 관계의 온도를 말해줍니다.",
 ];
 
 export default function Loading() {
@@ -102,8 +102,8 @@ export default function Loading() {
               <RefreshCw className="w-10 h-10 text-primary-foreground animate-spin" />
             </div>
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">대화 분석 중...</h2>
-          <p className="text-muted-foreground">잠시만 기다려주세요. AI가 대화를 분석하고 있습니다.</p>
+          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">대화 속 마음을 읽고 있어요</h2>
+          <p className="text-muted-foreground">차 한 잔 우려지는 시간만큼만 기다려주세요</p>
         </div>
 
         {/* Progress Bar */}
