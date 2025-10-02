@@ -6,7 +6,7 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, AlertCircle, Check, Loader2, HelpCircle } from "lucide-react";
+import { Upload, FileText, AlertCircle, Check, Loader2 } from "lucide-react";
 import JSZip from "jszip";
 import { apiRequest } from "@/lib/queryClient";
 import MobileWarningDialog from "@/components/mobile-warning-dialog";
@@ -292,20 +292,6 @@ export default function UploadPage() {
           <p className="text-lg text-muted-foreground">
             Maltcha AI를 통해 대화를 깊게 분석해보세요
           </p>
-          
-          {/* Mobile Guide Button */}
-          <div className="mt-4">
-            <Button
-              onClick={() => setShowMobileGuide(true)}
-              variant="outline"
-              size="sm"
-              className="gap-2"
-              data-testid="button-mobile-guide"
-            >
-              <HelpCircle className="w-4 h-4" />
-              📱 모바일 가이드 보기
-            </Button>
-          </div>
         </div>
 
         {/* Relationship Type Selection */}
@@ -476,6 +462,19 @@ export default function UploadPage() {
               </Button>
             </div>
           )}
+        </div>
+
+        {/* Mobile Guide Button - Mobile Only */}
+        <div className="mb-8 fade-in-up block md:hidden">
+          <Button
+            onClick={() => setShowMobileGuide(true)}
+            variant="outline"
+            size="sm"
+            className="w-full"
+            data-testid="button-mobile-guide"
+          >
+            📱 모바일 가이드 보기
+          </Button>
         </div>
 
         {/* Info Section */}
