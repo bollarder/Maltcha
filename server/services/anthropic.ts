@@ -24,7 +24,70 @@ export interface ConversationAnalysis {
   };
 }
 
-// 전체 메시지에서 통계 계산 함수들
+// ========================================
+// 강화된 JSON 파싱 유틸리티
+// ========================================
+function robustJsonParse(
+  text: string,
+  type: "object" | "array" = "object",
+): any {
+  const attempts: Array<() => any> = [];
+
+  // 시도 1: 코드 블록 제거 후 직접 파싱
+  attempts.push(() => {
+    const cleaned = text
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "")
+      .trim();
+    return JSON.parse(cleaned);
+  });
+
+  // 시도 2: 정규식으로 JSON 추출
+  attempts.push(() => {
+    const pattern = type === "array" ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
+    const match = text.match(pattern);
+    if (!match) throw new Error("No JSON found");
+    return JSON.parse(match[0]);
+  });
+
+  // 시도 3: 첫 번째와 마지막 중괄호/대괄호 사이 추출
+  attempts.push(() => {
+    const startChar = type === "array" ? "[" : "{";
+    const endChar = type === "array" ? "]" : "}";
+
+    const startIdx = text.indexOf(startChar);
+    const endIdx = text.lastIndexOf(endChar);
+
+    if (startIdx === -1 || endIdx === -1 || startIdx >= endIdx) {
+      throw new Error("Invalid JSON structure");
+    }
+
+    return JSON.parse(text.substring(startIdx, endIdx + 1));
+  });
+
+  // 모든 시도를 순차적으로 실행
+  for (let i = 0; i < attempts.length; i++) {
+    try {
+      const result = attempts[i]();
+      if (result) {
+        if (i > 0) {
+          console.log(`JSON 파싱 성공: 시도 ${i + 1}번째 방법 사용`);
+        }
+        return result;
+      }
+    } catch (e) {
+      if (i === attempts.length - 1) {
+        console.error(`모든 JSON 파싱 시도 실패:`, e);
+      }
+    }
+  }
+
+  return null;
+}
+
+// ========================================
+// 전체 메시지 통계 계산 함수들
+// ========================================
 function calculateMessageRatio(messages: any[], user: string, partner: string) {
   const userCount = messages.filter((m) => m.participant === user).length;
   const partnerCount = messages.filter((m) => m.participant === partner).length;
@@ -155,7 +218,9 @@ function calculateSentimentRatio(messages: any[]) {
   };
 }
 
+// ========================================
 // 관계별 분석 포인트 동적 생성
+// ========================================
 function getAnalysisPoints(primary: string, secondary: string[]) {
   const points: string[] = [];
   const allRelationships = [primary, ...secondary];
@@ -219,6 +284,9 @@ function getAnalysisPoints(primary: string, secondary: string[]) {
   return points.join("\n");
 }
 
+// ========================================
+// 메인 분석 함수
+// ========================================
 export async function analyzeConversation(
   messages: { timestamp: string; participant: string; content: string }[],
   stats: { totalMessages: number; participants: number },
@@ -257,11 +325,13 @@ export async function analyzeConversation(
     secondaryRelationships,
   );
 
-  // Stage 1: 핵심 정보 추출 (샘플 사용)
+  // ========================================
+  // Stage 1: 핵심 정보 추출
+  // ========================================
   const stage1Response = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
     max_tokens: 3000,
-    system: `당신은 대화 분석 전문가입니다. 주어진 통���와 대화 샘플에서 관계에 중요한 정보를 추출하세요.`,
+    system: `당신은 대화 분석 전문가입니다. 주어진 통계와 대화 샘플에서 관계에 중요한 정보를 추출하세요.`,
     messages: [
       {
         role: "user",
@@ -330,12 +400,8 @@ ${Array.from({ length: Math.min(50, messages.length - 200) }, () => {
 
   let stage1KeyInfo;
   try {
-    const cleanText = stage1Text
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "");
-    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : cleanText);
-    stage1KeyInfo = parsed.keyInfo || {};
+    const parsed = robustJsonParse(stage1Text, "object");
+    stage1KeyInfo = parsed?.keyInfo || {};
   } catch (e) {
     console.error("Stage 1 파싱 실패:", e);
     stage1KeyInfo = {
@@ -357,7 +423,9 @@ ${Array.from({ length: Math.min(50, messages.length - 200) }, () => {
 
   console.log("Stage 1 완료");
 
+  // ========================================
   // Stage 2: 관계 심층 분석
+  // ========================================
   const stage2Response = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
     max_tokens: 3000,
@@ -416,11 +484,7 @@ ${messages
 
   let stage2Data;
   try {
-    const cleanText = stage2Text
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "");
-    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
-    stage2Data = JSON.parse(jsonMatch ? jsonMatch[0] : cleanText);
+    stage2Data = robustJsonParse(stage2Text, "object") || {};
   } catch (e) {
     console.error("Stage 2 파싱 실패:", e);
     stage2Data = {
@@ -434,7 +498,9 @@ ${messages
 
   console.log("Stage 2 완료");
 
+  // ========================================
   // Stage 3: 실용적 인사이트
+  // ========================================
   const stage3Response = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
     max_tokens: 2500,
@@ -493,13 +559,11 @@ ${messages
 
   let insights;
   try {
-    const cleanText = stage3Text
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "");
-    const jsonMatch = cleanText.match(/\[[\s\S]*\]/);
-    insights = JSON.parse(jsonMatch ? jsonMatch[0] : cleanText);
-    if (!Array.isArray(insights)) {
-      insights = [];
+    const parsed = robustJsonParse(stage3Text, "array");
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      insights = parsed;
+    } else {
+      throw new Error("Invalid array");
     }
   } catch (e) {
     console.error("Stage 3 파싱 실패:", e);
@@ -525,6 +589,9 @@ ${messages
 
   console.log("Stage 3 완료");
 
+  // ========================================
+  // 최종 결과 생성
+  // ========================================
   const sentimentScore = Math.round(
     (fullStats.sentimentRatio.positive * 100 +
       fullStats.sentimentRatio.neutral * 50) /
