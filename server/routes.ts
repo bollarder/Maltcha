@@ -12,20 +12,29 @@ function generateId(): string {
 export function registerRoutes(app: Express): Server {
   app.post("/api/analyze", async (req, res) => {
     try {
-      const { fileName, fileSize, fileContent } = req.body;
+      const { 
+        content, 
+        primaryRelationship = "친구", 
+        secondaryRelationships = [] 
+      } = req.body;
 
-      if (!fileContent) {
+      if (!content) {
         return res.status(400).json({ message: "No content provided" });
       }
 
       const analysis = await storage.createAnalysis({
-        fileName,
-        fileSize,
+        fileName: "conversation.txt",
+        fileSize: content.length,
       });
 
-      res.json({ id: analysis.id });
+      res.json({ analysisId: analysis.id });
 
-      processAnalysis(analysis.id, fileContent).catch((error) => {
+      processAnalysis(
+        analysis.id, 
+        content, 
+        primaryRelationship, 
+        secondaryRelationships
+      ).catch((error) => {
         console.error("Analysis error:", error);
         storage.updateAnalysis(analysis.id, {
           status: "failed",
@@ -57,7 +66,12 @@ export function registerRoutes(app: Express): Server {
   return httpServer;
 }
 
-async function processAnalysis(analysisId: string, fileContent: string) {
+async function processAnalysis(
+  analysisId: string, 
+  fileContent: string,
+  primaryRelationship: string = "친구",
+  secondaryRelationships: string[] = []
+) {
   const parsed = parseKakaoTalkFile(fileContent);
 
   const stats = calculateStats(parsed.messages, parsed.participants);
@@ -73,7 +87,12 @@ async function processAnalysis(analysisId: string, fileContent: string) {
     },
   });
 
-  const aiAnalysis = await analyzeConversation(parsed.messages, stats);
+  const aiAnalysis = await analyzeConversation(
+    parsed.messages, 
+    stats,
+    primaryRelationship,
+    secondaryRelationships
+  );
 
   await storage.updateAnalysis(analysisId, {
     status: "completed",
