@@ -4,7 +4,6 @@ import {
   Upload as UploadIcon,
   FileText,
   X,
-  ArrowLeft,
   ArrowRight,
   Info,
 } from "lucide-react";
@@ -417,17 +416,7 @@ export default function Upload() {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center fade-in-up">
-          <Button
-            variant="ghost"
-            size="lg"
-            onClick={() => setLocation("/")}
-            className="text-muted-foreground"
-            data-testid="button-back"
-          >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            뒤로 가기
-          </Button>
+        <div className="flex justify-center fade-in-up">
           <Button
             variant="outline"
             size="lg"
