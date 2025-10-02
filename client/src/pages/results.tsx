@@ -101,7 +101,7 @@ export default function Results() {
         <div className="mb-8 fade-in-up">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">마음결 노트</h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">Maltcha 인사이트</h1>
               <p className="text-muted-foreground">{analysis.fileName}</p>
             </div>
             <div className="mt-4 md:mt-0 flex gap-3">
@@ -490,7 +490,7 @@ export default function Results() {
           <div className="space-y-8 mb-8">
             <h2 className="text-2xl font-bold text-foreground flex items-center" data-testid="heading-stage3">
               <Lightbulb className="w-6 h-6 mr-2 text-primary" />
-              Tea의 마음결 노트
+              Tea의 Maltcha 인사이트
             </h2>
             
             <div className="space-y-4">

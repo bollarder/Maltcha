@@ -194,7 +194,7 @@ ${messages
     messages: [
       {
         role: "user",
-        content: `아래 분석 결과를 바탕으로, ${user_name}님만을 위한 '마음결 노트'를 ${relationship_type}에 맞춰 작성해줘.
+        content: `아래 분석 결과를 바탕으로, ${user_name}님만을 위한 'Maltcha 인사이트'를 ${relationship_type}에 맞춰 작성해줘.
 
 Stage 1 데이터:
 ${JSON.stringify(stage1Data, null, 2)}
