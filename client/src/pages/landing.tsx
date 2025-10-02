@@ -12,7 +12,11 @@ export default function Landing() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-2">
-              <img src={maltchaIcon} alt="Maltcha" className="w-8 h-8 rounded-lg" />
+              <img
+                src={maltchaIcon}
+                alt="Maltcha"
+                className="w-8 h-8 rounded-lg"
+              />
               <span className="text-xl font-bold text-foreground">Maltcha</span>
             </div>
             <div className="hidden md:flex items-center gap-8">
@@ -83,7 +87,7 @@ export default function Landing() {
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto">
-              Maltcha는 AI를 통해 대화 내역을 분석해서
+              Maltcha AI를 통해 대화 내역을 분석해서
               <br className="hidden md:block" />
               소중한 사람과 티키타카가 잘 되도록 합니다.
             </p>

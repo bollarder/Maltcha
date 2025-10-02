@@ -216,7 +216,7 @@ export default function Results() {
                         {Object.entries(stage1Data.basicStats.emojiFrequency).map(([name, freq]) => (
                           <div key={name} className="flex justify-between">
                             <span className="text-muted-foreground">{name}:</span>
-                            <span className="text-foreground font-medium">{freq}회</span>
+                            <span className="text-foreground font-medium">{String(freq)}회</span>
                           </div>
                         ))}
                       </div>
@@ -305,7 +305,7 @@ export default function Results() {
                       {Object.entries(stage1Data.keyInfo.affectionExpression).map(([name, count]) => (
                         <div key={name} className="p-4 bg-accent/20 rounded-lg text-center">
                           <p className="text-sm text-muted-foreground mb-1">{name}</p>
-                          <p className="text-2xl font-bold text-primary">{count}회</p>
+                          <p className="text-2xl font-bold text-primary">{String(count)}회</p>
                         </div>
                       ))}
                     </div>
@@ -357,7 +357,7 @@ export default function Results() {
                         {Object.entries(stage2Data.languagePattern.apologyFrequency).map(([name, freq]) => (
                           <div key={name} className="flex justify-between">
                             <span className="text-muted-foreground">{name}:</span>
-                            <span className="text-foreground font-medium">{freq}회</span>
+                            <span className="text-foreground font-medium">{String(freq)}회</span>
                           </div>
                         ))}
                       </div>
@@ -371,7 +371,7 @@ export default function Results() {
                         {Object.entries(stage2Data.languagePattern.gratitudeFrequency).map(([name, freq]) => (
                           <div key={name} className="flex justify-between">
                             <span className="text-muted-foreground">{name}:</span>
-                            <span className="text-foreground font-medium">{freq}회</span>
+                            <span className="text-foreground font-medium">{String(freq)}회</span>
                           </div>
                         ))}
                       </div>
@@ -448,7 +448,7 @@ export default function Results() {
                       <div className="space-y-1 text-sm">
                         {Object.entries(stage2Data.relationshipDynamics.responsePattern).map(([name, pattern]) => (
                           <div key={name}>
-                            <span className="text-muted-foreground">{name}:</span> {pattern}
+                            <span className="text-muted-foreground">{name}:</span> {String(pattern)}
                           </div>
                         ))}
                       </div>
