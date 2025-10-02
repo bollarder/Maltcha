@@ -419,7 +419,7 @@ export default function Upload() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center fade-in-up">
           <Button
-            variant="ghost"
+            variant="outline"
             size="lg"
             onClick={() => setLocation("/")}
             data-testid="button-back"
