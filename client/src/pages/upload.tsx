@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
+import JSZip from "jszip";
 
 export default function Upload() {
   const [, setLocation] = useLocation();
@@ -42,19 +43,23 @@ export default function Upload() {
 
   const handleFileSelect = useCallback(
     (selectedFile: File) => {
-      if (!selectedFile.name.endsWith(".txt")) {
+      const fileName = selectedFile.name.toLowerCase();
+      const validExtensions = [".txt", ".csv", ".zip"];
+      const isValidFile = validExtensions.some(ext => fileName.endsWith(ext));
+      
+      if (!isValidFile) {
         toast({
           title: "잘못된 파일 형식",
-          description: "txt 파일만 업로드할 수 있습니다.",
+          description: "txt, csv, zip 파일만 업로드할 수 있습니다.",
           variant: "destructive",
         });
         return;
       }
 
-      if (selectedFile.size > 10 * 1024 * 1024) {
+      if (selectedFile.size > 50 * 1024 * 1024) {
         toast({
           title: "파일 크기 초과",
-          description: "파일 크기는 10MB를 초과할 수 없습니다.",
+          description: "파일 크기는 50MB를 초과할 수 없습니다.",
           variant: "destructive",
         });
         return;
@@ -88,15 +93,100 @@ export default function Upload() {
     [handleFileSelect],
   );
 
+  const processZipFile = async (file: File): Promise<string> => {
+    try {
+      const zip = new JSZip();
+      const zipContent = await zip.loadAsync(file);
+      
+      // Find txt or csv files in the zip
+      const textFiles = Object.keys(zipContent.files).filter(name => 
+        (name.toLowerCase().endsWith('.txt') || name.toLowerCase().endsWith('.csv')) &&
+        !zipContent.files[name].dir
+      );
+      
+      if (textFiles.length === 0) {
+        throw new Error("zip 파일 내에 txt 또는 csv 파일을 찾을 수 없습니다.");
+      }
+      
+      // Use the first text file found
+      const fileContent = await zipContent.files[textFiles[0]].async("text");
+      
+      toast({
+        title: "zip 파일 처리 완료",
+        description: `${textFiles[0]} 파일을 추출했습니다.`,
+      });
+      
+      return fileContent;
+    } catch (error: any) {
+      throw new Error(`zip 파일 처리 실패: ${error.message}`);
+    }
+  };
+
+  const processCsvFile = (content: string): string => {
+    // CSV format conversion: assume format is "Date,Time,Name,Message"
+    // Convert to KakaoTalk txt format
+    const lines = content.split('\n');
+    const converted = lines.map(line => {
+      // Skip empty lines or header
+      if (!line.trim() || line.startsWith('Date,') || line.startsWith('날짜,')) {
+        return '';
+      }
+      
+      // Try to parse CSV line
+      const parts = line.split(',');
+      if (parts.length >= 4) {
+        const [date, time, name, ...messageParts] = parts;
+        const message = messageParts.join(',').trim();
+        
+        // Convert to KakaoTalk format: "2024. 1. 15. 오후 9:30, Name : Message"
+        return `${date.trim()} ${time.trim()}, ${name.trim()} : ${message}`;
+      }
+      
+      return line;
+    }).filter(line => line).join('\n');
+    
+    return converted || content; // If conversion fails, return original
+  };
+
   const handleAnalyze = async () => {
     if (!file) return;
 
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      const content = e.target?.result as string;
+    try {
+      let content: string;
+      const fileName = file.name.toLowerCase();
+      
+      if (fileName.endsWith('.zip')) {
+        // Process zip file
+        content = await processZipFile(file);
+      } else if (fileName.endsWith('.csv')) {
+        // Process csv file
+        const reader = new FileReader();
+        content = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => {
+            const csvContent = e.target?.result as string;
+            resolve(processCsvFile(csvContent));
+          };
+          reader.onerror = () => reject(new Error("파일 읽기 실패"));
+          reader.readAsText(file);
+        });
+      } else {
+        // Process txt file
+        const reader = new FileReader();
+        content = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target?.result as string);
+          reader.onerror = () => reject(new Error("파일 읽기 실패"));
+          reader.readAsText(file);
+        });
+      }
+      
       analyzeMutation.mutate(content);
-    };
-    reader.readAsText(file);
+    } catch (error: any) {
+      toast({
+        title: "파일 처리 실패",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   };
 
   const formatFileSize = (bytes: number) => {
@@ -114,7 +204,7 @@ export default function Upload() {
             대화 파일 업로드
           </h1>
           <p className="text-lg text-muted-foreground">
-            카카오톡 대화 내보내기 txt 파일을 업로드하세요
+            카카오톡 대화 내보내기 파일을 업로드하세요 (txt, csv, zip)
           </p>
         </div>
 
@@ -142,16 +232,16 @@ export default function Upload() {
               파일을 드래그하거나 클릭하여 업로드
             </h3>
             <p className="text-muted-foreground mb-4">
-              지원 형식: .txt (대화 내보내기 파일)
+              지원 형식: .txt, .csv, .zip
             </p>
             <p className="text-sm text-muted-foreground">
-              최대 파일 크기: 10MB
+              최대 파일 크기: 50MB
             </p>
             <input
               id="file-input"
               type="file"
               className="hidden"
-              accept=".txt"
+              accept=".txt,.csv,.zip"
               onChange={handleFileInput}
               data-testid="input-file"
             />
@@ -205,8 +295,13 @@ export default function Upload() {
             <li>3. 우측 상단 설정을 클릭합니다</li>
             <li>4. '대화 내용 내보내기'를 선택합니다</li>
             <li>5. '텍스트 메시지만 보내기'를 선택합니다</li>
-            <li>6. 저장된 txt 파일을 업로드합니다</li>
+            <li>6. 저장된 txt, csv 또는 zip 파일을 업로드합니다</li>
           </ol>
+          <div className="mt-4 p-3 bg-primary/10 rounded-lg">
+            <p className="text-sm text-foreground">
+              💡 <strong>Tip:</strong> zip 파일의 경우 자동으로 압축을 해제하여 대화 파일을 찾습니다.
+            </p>
+          </div>
         </div>
 
         {/* Action Buttons */}
