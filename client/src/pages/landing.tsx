@@ -18,18 +18,18 @@ export default function Landing() {
             <div className="hidden md:flex items-center space-x-8">
               <a
                 href="#features"
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 기능
               </a>
               <a
                 href="#how-it-works"
-                className="text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
               >
                 사용 방법
               </a>
               <Link href="/upload">
-                <Button className="bg-primary text-primary-foreground hover:bg-secondary">
+                <Button className="bg-primary text-primary-foreground hover:bg-secondary text-sm">
                   시작하기
                 </Button>
               </Link>
