@@ -419,9 +419,10 @@ export default function Upload() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center fade-in-up">
           <Button
-            variant="outline"
+            variant="ghost"
             size="lg"
             onClick={() => setLocation("/")}
+            className="text-muted-foreground"
             data-testid="button-back"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
@@ -432,7 +433,7 @@ export default function Upload() {
             size="lg"
             onClick={handleAnalyze}
             disabled={!file || analyzeMutation.isPending}
-            className="bg-primary text-primary-foreground hover:bg-secondary border-2"
+            className="bg-primary text-foreground hover:bg-secondary border-2"
             data-testid="button-analyze"
           >
             {analyzeMutation.isPending ? "업로드 중..." : "분석 시작하기"}
