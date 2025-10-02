@@ -213,7 +213,7 @@ export default function Upload() {
             대화 파일 업로드
           </h1>
           <p className="text-lg text-muted-foreground">
-            카카오톡 대화 내보내기 파일을 업로드하세요 (txt, csv, zip)
+            대화 파일을 업로드하세요 (txt, csv, zip)
           </p>
         </div>
 
