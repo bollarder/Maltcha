@@ -113,9 +113,8 @@ export default function Landing() {
                 </Button>
               </Link>
               <Button
-                variant="outline"
+                variant="ghost"
                 size="lg"
-                className="border-2"
                 data-testid="button-demo"
               >
                 데모 보기

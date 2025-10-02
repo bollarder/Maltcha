@@ -45,8 +45,8 @@ export default function Upload() {
     (selectedFile: File) => {
       const fileName = selectedFile.name.toLowerCase();
       const validExtensions = [".txt", ".csv", ".zip"];
-      const isValidFile = validExtensions.some(ext => fileName.endsWith(ext));
-      
+      const isValidFile = validExtensions.some((ext) => fileName.endsWith(ext));
+
       if (!isValidFile) {
         toast({
           title: "잘못된 파일 형식",
@@ -97,25 +97,27 @@ export default function Upload() {
     try {
       const zip = new JSZip();
       const zipContent = await zip.loadAsync(file);
-      
+
       // Find txt or csv files in the zip
-      const textFiles = Object.keys(zipContent.files).filter(name => 
-        (name.toLowerCase().endsWith('.txt') || name.toLowerCase().endsWith('.csv')) &&
-        !zipContent.files[name].dir
+      const textFiles = Object.keys(zipContent.files).filter(
+        (name) =>
+          (name.toLowerCase().endsWith(".txt") ||
+            name.toLowerCase().endsWith(".csv")) &&
+          !zipContent.files[name].dir,
       );
-      
+
       if (textFiles.length === 0) {
         throw new Error("zip 파일 내에 txt 또는 csv 파일을 찾을 수 없습니다.");
       }
-      
+
       // Use the first text file found
       const fileContent = await zipContent.files[textFiles[0]].async("text");
-      
+
       toast({
         title: "zip 파일 처리 완료",
         description: `${textFiles[0]} 파일을 추출했습니다.`,
       });
-      
+
       return fileContent;
     } catch (error: any) {
       throw new Error(`zip 파일 처리 실패: ${error.message}`);
@@ -125,26 +127,33 @@ export default function Upload() {
   const processCsvFile = (content: string): string => {
     // CSV format conversion: assume format is "Date,Time,Name,Message"
     // Convert to KakaoTalk txt format
-    const lines = content.split('\n');
-    const converted = lines.map(line => {
-      // Skip empty lines or header
-      if (!line.trim() || line.startsWith('Date,') || line.startsWith('날짜,')) {
-        return '';
-      }
-      
-      // Try to parse CSV line
-      const parts = line.split(',');
-      if (parts.length >= 4) {
-        const [date, time, name, ...messageParts] = parts;
-        const message = messageParts.join(',').trim();
-        
-        // Convert to KakaoTalk format: "2024. 1. 15. 오후 9:30, Name : Message"
-        return `${date.trim()} ${time.trim()}, ${name.trim()} : ${message}`;
-      }
-      
-      return line;
-    }).filter(line => line).join('\n');
-    
+    const lines = content.split("\n");
+    const converted = lines
+      .map((line) => {
+        // Skip empty lines or header
+        if (
+          !line.trim() ||
+          line.startsWith("Date,") ||
+          line.startsWith("날짜,")
+        ) {
+          return "";
+        }
+
+        // Try to parse CSV line
+        const parts = line.split(",");
+        if (parts.length >= 4) {
+          const [date, time, name, ...messageParts] = parts;
+          const message = messageParts.join(",").trim();
+
+          // Convert to KakaoTalk format: "2024. 1. 15. 오후 9:30, Name : Message"
+          return `${date.trim()} ${time.trim()}, ${name.trim()} : ${message}`;
+        }
+
+        return line;
+      })
+      .filter((line) => line)
+      .join("\n");
+
     return converted || content; // If conversion fails, return original
   };
 
@@ -154,11 +163,11 @@ export default function Upload() {
     try {
       let content: string;
       const fileName = file.name.toLowerCase();
-      
-      if (fileName.endsWith('.zip')) {
+
+      if (fileName.endsWith(".zip")) {
         // Process zip file
         content = await processZipFile(file);
-      } else if (fileName.endsWith('.csv')) {
+      } else if (fileName.endsWith(".csv")) {
         // Process csv file
         const reader = new FileReader();
         content = await new Promise<string>((resolve, reject) => {
@@ -178,7 +187,7 @@ export default function Upload() {
           reader.readAsText(file);
         });
       }
-      
+
       analyzeMutation.mutate(content);
     } catch (error: any) {
       toast({
@@ -299,7 +308,8 @@ export default function Upload() {
           </ol>
           <div className="mt-4 p-3 bg-primary/10 rounded-lg">
             <p className="text-sm text-foreground">
-              💡 <strong>Tip:</strong> zip 파일의 경우 자동으로 압축을 해제하여 대화 파일을 찾습니다.
+              💡 <strong>Tip:</strong> zip 파일의 경우 자동으로 압축을 해제하여
+              대화 파일을 찾습니다.
             </p>
           </div>
         </div>
@@ -307,20 +317,20 @@ export default function Upload() {
         {/* Action Buttons */}
         <div className="flex flex-col sm:flex-row gap-4 justify-center fade-in-up">
           <Button
-            variant="outline"
+            variant="ghost"
             size="lg"
             onClick={() => setLocation("/")}
-            className="border-2"
             data-testid="button-back"
           >
             <ArrowLeft className="w-5 h-5 mr-2" />
             뒤로 가기
           </Button>
           <Button
+            variant="outline"
             size="lg"
             onClick={handleAnalyze}
             disabled={!file || analyzeMutation.isPending}
-            className="bg-primary text-primary-foreground hover:bg-secondary"
+            className="bg-primary text-primary-foreground hover:bg-secondary border-2"
             data-testid="button-analyze"
           >
             {analyzeMutation.isPending ? "업로드 중..." : "분석 시작하기"}
