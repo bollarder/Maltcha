@@ -88,7 +88,7 @@ export default function Landing() {
 
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto">
               Maltcha AI를 통해 대화 내역을 분석해서
-              <br className="hidden md:block" />
+              <br />
               소중한 사람과 티키타카가 잘 되도록 합니다.
             </p>
 
