@@ -1,74 +1,112 @@
+// client/src/pages/upload.tsx
+// 기존 import는 그대로 유지하고, 아래 부분만 수정/추가
+
 import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
-import {
-  Upload as UploadIcon,
-  FileText,
-  X,
-  ArrowRight,
-  Info,
-} from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { Upload, FileText, AlertCircle, Check, Loader2 } from "lucide-react";
 import JSZip from "jszip";
-import { isMobile } from "@/lib/device";
+import { apiRequest } from "@/lib/queryClient";
 import { MobileWarningDialog } from "@/components/mobile-warning-dialog";
 
-export default function Upload() {
+export default function UploadPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [file, setFile] = useState<File | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [showMobileWarning, setShowMobileWarning] = useState(false);
-  const mobile = isMobile();
 
+  // 관계 유형 상태 관리
+  const [selectedRelationships, setSelectedRelationships] = useState<string[]>([
+    "친구",
+  ]);
+  const [primaryRelationship, setPrimaryRelationship] =
+    useState<string>("친구");
+
+  // 관계 유형 정의 (확장 가능)
+  const relationshipTypes = [
+    { value: "연인", emoji: "💕", label: "연인", description: "애정 관계" },
+    { value: "썸", emoji: "💘", label: "썸", description: "연인 이전 단계" },
+    { value: "친구", emoji: "👥", label: "친구", description: "우정 관계" },
+    { value: "지인", emoji: "🤝", label: "지인", description: "아는 사이" },
+    {
+      value: "업무",
+      emoji: "💼",
+      label: "업무 동료",
+      description: "일적 관계",
+    },
+    {
+      value: "파트너",
+      emoji: "🤜🤛",
+      label: "비즈니스 파트너",
+      description: "협업 관계",
+    },
+    {
+      value: "가족",
+      emoji: "👨‍👩‍👧‍👦",
+      label: "가족",
+      description: "혈연/인척 관계",
+    },
+    {
+      value: "멘토",
+      emoji: "🎓",
+      label: "멘토-멘티",
+      description: "상하 관계",
+    },
+  ];
+
+  // 모바일 감지
   useEffect(() => {
-    if (mobile && !localStorage.getItem('mobile-warning-closed')) {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
       setShowMobileWarning(true);
     }
-  }, [mobile]);
+  }, []);
+
+  // 관계 토글 함수
+  const toggleRelationship = (value: string) => {
+    if (selectedRelationships.includes(value)) {
+      // 최소 1개는 선택되어야 함
+      if (selectedRelationships.length === 1) {
+        toast({
+          title: "최소 1개 선택 필요",
+          description: "관계 유형을 최소 1개는 선택해야 합니다.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setSelectedRelationships((prev) => prev.filter((r) => r !== value));
+
+      // 주 관계가 제거되면 첫 번째 항목을 주 관계로
+      if (primaryRelationship === value) {
+        const remaining = selectedRelationships.filter((r) => r !== value);
+        setPrimaryRelationship(remaining[0]);
+      }
+    } else {
+      setSelectedRelationships((prev) => [...prev, value]);
+    }
+  };
 
   const analyzeMutation = useMutation({
-    mutationFn: async (fileContent: string) => {
-      const res = await apiRequest("POST", "/api/analyze", {
-        fileName: file!.name,
-        fileSize: file!.size,
-        fileContent,
-      });
+    mutationFn: async (data: {
+      content: string;
+      primaryRelationship: string;
+      secondaryRelationships: string[];
+    }) => {
+      const res = await apiRequest("POST", "/api/analyze", data);
       return res.json();
     },
     onSuccess: (data) => {
-      setLocation(`/loading/${data.id}`);
+      setLocation(`/loading/${data.analysisId}`);
     },
     onError: (error: Error) => {
-      const description = mobile 
-        ? `${error.message}\n\nPC에서 시도하면 더 쉽습니다`
-        : error.message;
-      
       toast({
         title: "분석 시작 실패",
-        description,
+        description: error.message,
         variant: "destructive",
-        action: mobile ? (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(window.location.href);
-                toast({
-                  title: "✓ 링크가 복사되었습니다",
-                  description: "PC에서 붙여넣기 하세요",
-                });
-              } catch (err) {
-                // Silently fail
-              }
-            }}
-          >
-            PC로 링크 보내기
-          </Button>
-        ) : undefined,
       });
     },
   });
@@ -77,12 +115,12 @@ export default function Upload() {
     (selectedFile: File) => {
       const fileName = selectedFile.name.toLowerCase();
       const validExtensions = [".txt", ".csv", ".zip"];
-      const isValidFile = validExtensions.some((ext) => fileName.endsWith(ext));
+      const isValid = validExtensions.some((ext) => fileName.endsWith(ext));
 
-      if (!isValidFile) {
+      if (!isValid) {
         toast({
-          title: "잘못된 파일 형식",
-          description: "txt, csv, zip 파일만 업로드할 수 있습니다.",
+          title: "지원하지 않는 파일 형식",
+          description: "txt, csv, zip 파일만 업로드 가능합니다.",
           variant: "destructive",
         });
         return;
@@ -130,7 +168,6 @@ export default function Upload() {
       const zip = new JSZip();
       const zipContent = await zip.loadAsync(file);
 
-      // Find txt or csv files in the zip
       const textFiles = Object.keys(zipContent.files).filter(
         (name) =>
           (name.toLowerCase().endsWith(".txt") ||
@@ -142,7 +179,6 @@ export default function Upload() {
         throw new Error("zip 파일 내에 txt 또는 csv 파일을 찾을 수 없습니다.");
       }
 
-      // Use the first text file found
       const fileContent = await zipContent.files[textFiles[0]].async("text");
 
       toast({
@@ -157,12 +193,9 @@ export default function Upload() {
   };
 
   const processCsvFile = (content: string): string => {
-    // CSV format conversion: assume format is "Date,Time,Name,Message"
-    // Convert to KakaoTalk txt format
     const lines = content.split("\n");
     const converted = lines
       .map((line) => {
-        // Skip empty lines or header
         if (
           !line.trim() ||
           line.startsWith("Date,") ||
@@ -171,13 +204,10 @@ export default function Upload() {
           return "";
         }
 
-        // Try to parse CSV line
         const parts = line.split(",");
         if (parts.length >= 4) {
           const [date, time, name, ...messageParts] = parts;
           const message = messageParts.join(",").trim();
-
-          // Convert to KakaoTalk format: "2024. 1. 15. 오후 9:30, Name : Message"
           return `${date.trim()} ${time.trim()}, ${name.trim()} : ${message}`;
         }
 
@@ -186,7 +216,7 @@ export default function Upload() {
       .filter((line) => line)
       .join("\n");
 
-    return converted || content; // If conversion fails, return original
+    return converted || content;
   };
 
   const handleAnalyze = async () => {
@@ -197,10 +227,8 @@ export default function Upload() {
       const fileName = file.name.toLowerCase();
 
       if (fileName.endsWith(".zip")) {
-        // Process zip file
         content = await processZipFile(file);
       } else if (fileName.endsWith(".csv")) {
-        // Process csv file
         const reader = new FileReader();
         content = await new Promise<string>((resolve, reject) => {
           reader.onload = (e) => {
@@ -211,7 +239,6 @@ export default function Upload() {
           reader.readAsText(file);
         });
       } else {
-        // Process txt file
         const reader = new FileReader();
         content = await new Promise<string>((resolve, reject) => {
           reader.onload = (e) => resolve(e.target?.result as string);
@@ -220,7 +247,14 @@ export default function Upload() {
         });
       }
 
-      analyzeMutation.mutate(content);
+      // 다중 관계 정보 포함
+      analyzeMutation.mutate({
+        content,
+        primaryRelationship,
+        secondaryRelationships: selectedRelationships.filter(
+          (r) => r !== primaryRelationship,
+        ),
+      });
     } catch (error: any) {
       toast({
         title: "파일 처리 실패",
@@ -238,11 +272,11 @@ export default function Upload() {
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-background">
-      <MobileWarningDialog 
-        open={showMobileWarning} 
+      <MobileWarningDialog
+        open={showMobileWarning}
         onOpenChange={setShowMobileWarning}
       />
-      
+
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 fade-in-up">
@@ -254,180 +288,190 @@ export default function Upload() {
           </p>
         </div>
 
+        {/* Relationship Type Selection */}
+        {!file && (
+          <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
+            <label className="block text-sm font-medium text-foreground mb-2">
+              대화 상대와의 관계를 선택해주세요
+            </label>
+            <p className="text-xs text-muted-foreground mb-4">
+              여러 관계가 해당된다면 모두 선택하세요. 주요 관계를 다시 클릭하면
+              ⭐로 표시됩니다.
+            </p>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {relationshipTypes.map((type) => {
+                const isSelected = selectedRelationships.includes(type.value);
+                const isPrimary = primaryRelationship === type.value;
+
+                return (
+                  <button
+                    key={type.value}
+                    onClick={() => {
+                      if (isSelected && !isPrimary) {
+                        setPrimaryRelationship(type.value);
+                      } else if (isSelected && isPrimary) {
+                        toggleRelationship(type.value);
+                      } else {
+                        toggleRelationship(type.value);
+                        if (selectedRelationships.length === 0) {
+                          setPrimaryRelationship(type.value);
+                        }
+                      }
+                    }}
+                    className={`relative p-4 rounded-xl border-2 transition-all ${
+                      isSelected
+                        ? "border-primary bg-primary/10 shadow-md"
+                        : "border-border hover:border-primary/50"
+                    }`}
+                    data-testid={`relationship-${type.value}`}
+                  >
+                    {/* 주요 관계 표시 */}
+                    {isPrimary && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                        <span className="text-xs">⭐</span>
+                      </div>
+                    )}
+
+                    {/* 선택 표시 */}
+                    {isSelected && !isPrimary && (
+                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                    )}
+
+                    <div className="text-3xl mb-2">{type.emoji}</div>
+                    <div className="text-sm font-medium text-foreground">
+                      {type.label}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {type.description}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* 선택된 관계 요약 */}
+            {selectedRelationships.length > 0 && (
+              <div className="mt-4 p-3 bg-accent/20 rounded-lg">
+                <p className="text-sm text-foreground">
+                  <span className="font-medium">주요 관계:</span>{" "}
+                  {primaryRelationship}
+                  {selectedRelationships.length > 1 && (
+                    <>
+                      <span className="mx-2">+</span>
+                      <span className="text-muted-foreground">
+                        {selectedRelationships
+                          .filter((r) => r !== primaryRelationship)
+                          .join(", ")}
+                      </span>
+                    </>
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* Upload Zone */}
         <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
           <div
             className={`rounded-xl p-12 text-center cursor-pointer transition-all border-2 border-dashed ${
               dragOver
-                ? "border-primary bg-accent dark:bg-accent transform scale-[1.02]"
-                : "border-border bg-transparent"
+                ? "border-primary bg-primary/5 scale-105"
+                : "border-border hover:border-primary/50"
             }`}
+            onDrop={handleDrop}
             onDragOver={(e) => {
               e.preventDefault();
               setDragOver(true);
             }}
             onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
             onClick={() => document.getElementById("file-input")?.click()}
-            data-testid="dropzone-upload"
+            data-testid="upload-zone"
           >
-            <div className="mb-6">
-              <UploadIcon className="w-16 h-16 mx-auto text-primary" />
-            </div>
-            <h3 className="text-xl font-semibold text-foreground mb-2">
-              파일을 드래그하거나 클릭하여 업로드
-            </h3>
-            <p className="text-muted-foreground mb-4">
-              지원 형식: .txt, .csv, .zip
-            </p>
-            <p className="text-sm text-muted-foreground">
-              최대 파일 크기: 50MB
-            </p>
-            <input
-              id="file-input"
-              type="file"
-              className="hidden"
-              accept=".txt,.csv,.zip"
-              onChange={handleFileInput}
-              data-testid="input-file"
-            />
-          </div>
-
-          {/* File Preview */}
-          {file && (
-            <div className="mt-6 p-4 bg-accent dark:bg-accent rounded-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <FileText className="w-8 h-8 text-primary" />
-                  <div>
-                    <p
-                      className="font-medium text-foreground"
-                      data-testid="text-filename"
-                    >
-                      {file.name}
-                    </p>
-                    <p
-                      className="text-sm text-muted-foreground"
-                      data-testid="text-filesize"
-                    >
-                      {formatFileSize(file.size)}
-                    </p>
-                  </div>
+            {file ? (
+              <div className="space-y-4">
+                <FileText className="w-16 h-16 mx-auto text-primary" />
+                <div>
+                  <p className="text-lg font-semibold text-foreground">
+                    {file.name}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {formatFileSize(file.size)}
+                  </p>
                 </div>
-                <button
-                  className="text-destructive hover:text-destructive/80"
+                <Button
                   onClick={(e) => {
                     e.stopPropagation();
                     setFile(null);
                   }}
-                  data-testid="button-remove-file"
+                  variant="outline"
+                  size="sm"
                 >
-                  <X className="w-5 h-5" />
-                </button>
+                  다른 파일 선택
+                </Button>
               </div>
+            ) : (
+              <div className="space-y-4">
+                <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
+                <div>
+                  <p className="text-lg font-semibold text-foreground mb-2">
+                    파일을 드래그하거나 클릭하여 업로드
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    txt, csv, zip 파일 지원 (최대 50MB)
+                  </p>
+                </div>
+              </div>
+            )}
+            <input
+              id="file-input"
+              type="file"
+              accept=".txt,.csv,.zip"
+              onChange={handleFileInput}
+              className="hidden"
+              data-testid="file-input"
+            />
+          </div>
+
+          {file && (
+            <div className="mt-6">
+              <Button
+                onClick={handleAnalyze}
+                disabled={analyzeMutation.isPending}
+                className="w-full bg-primary text-primary-foreground hover:bg-secondary"
+                size="lg"
+                data-testid="button-analyze"
+              >
+                {analyzeMutation.isPending ? (
+                  <>
+                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    분석 시작 중...
+                  </>
+                ) : (
+                  "분석 시작하기"
+                )}
+              </Button>
             </div>
           )}
         </div>
 
-        {/* File Requirements */}
-        <div className="bg-accent/50 dark:bg-accent/50 rounded-xl p-6 mb-8 fade-in-up">
-          <h3 className="font-semibold text-foreground mb-3 flex items-center">
-            <Info className="w-5 h-5 mr-2 text-primary" />
-            {mobile ? "📱 모바일 업로드 가이드 (약 10분 소요)" : "카카오톡 대화 내보내기 방법"}
-          </h3>
-          
-          {mobile ? (
-            <>
-              <div className="space-y-3 text-sm text-muted-foreground">
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-primary-foreground text-xs font-bold mt-0.5">
-                    1
-                  </div>
-                  <p className="pt-0.5">카카오톡 채팅방에서 우측 상단 메뉴(≡) 클릭</p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-primary-foreground text-xs font-bold mt-0.5">
-                    2
-                  </div>
-                  <p className="pt-0.5">우측 상단 설정 → 대화 내보내기 → 내 이메일로 전송</p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-primary-foreground text-xs font-bold mt-0.5">
-                    3
-                  </div>
-                  <p className="pt-0.5">이메일 앱에서 ZIP 파일 다운로드</p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-primary-foreground text-xs font-bold mt-0.5">
-                    4
-                  </div>
-                  <p className="pt-0.5">브라우저로 돌아오기</p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center flex-shrink-0 text-primary-foreground text-xs font-bold mt-0.5">
-                    5
-                  </div>
-                  <p className="pt-0.5">아래에서 ZIP 파일 업로드</p>
-                </div>
-              </div>
-              <div className="mt-4 pt-4 border-t border-border">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      await navigator.clipboard.writeText(window.location.href);
-                      toast({
-                        title: "✓ 링크가 복사되었습니다",
-                        description: "PC에서 붙여넣기 하세요",
-                      });
-                    } catch (err) {
-                      toast({
-                        title: "링크 복사 실패",
-                        description: "수동으로 URL을 복사해주세요",
-                        variant: "destructive",
-                      });
-                    }
-                  }}
-                  className="w-full"
-                >
-                  🤔 어려우신가요? PC로 링크 받기
-                </Button>
-              </div>
-            </>
-          ) : (
-            <>
-              <ol className="space-y-2 text-sm text-muted-foreground ml-7">
-                <li>1. 카카오톡에서 분석할 채팅방을 엽니다</li>
-                <li>2. 우측 상단 메뉴(≡)를 클릭합니다</li>
-                <li>3. 우측 상단 설정을 클릭합니다</li>
-                <li>4. '대화 내용 내보내기'를 선택합니다</li>
-                <li>5. '텍스트 메시지만 보내기'를 선택합니다</li>
-                <li>6. 저장된 txt, csv 또는 zip 파일을 업로드합니다</li>
+        {/* Info Section */}
+        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-6 fade-in-up">
+          <div className="flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+            <div className="text-sm text-blue-900 dark:text-blue-100">
+              <p className="font-medium mb-2">카카오톡 대화 내보내기 방법</p>
+              <ol className="list-decimal list-inside space-y-1 text-blue-800 dark:text-blue-200">
+                <li>카카오톡 대화방 입장</li>
+                <li>우측 상단 메뉴 → 대화 내보내기</li>
+                <li>txt 또는 csv 형식으로 저장</li>
+                <li>저장된 파일을 업로드</li>
               </ol>
-              <div className="mt-4 p-3 bg-primary/10 rounded-lg">
-                <p className="text-sm text-foreground">
-                  💡 <strong>Tip:</strong> zip 파일의 경우 자동으로 압축을 해제하여
-                  대화 파일을 찾습니다.
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex justify-center fade-in-up">
-          <Button
-            variant="outline"
-            size="lg"
-            onClick={handleAnalyze}
-            disabled={!file || analyzeMutation.isPending}
-            className="bg-primary border-2 disabled:text-muted-foreground enabled:text-black dark:enabled:text-white hover:bg-secondary"
-            data-testid="button-analyze"
-          >
-            {analyzeMutation.isPending ? "업로드 중..." : "분석 시작하기"}
-            <ArrowRight className="w-5 h-5 ml-2" />
-          </Button>
+            </div>
+          </div>
         </div>
       </div>
     </div>

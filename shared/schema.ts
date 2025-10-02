@@ -93,7 +93,6 @@ export const analysisResultSchema = z.object({
 export const insertAnalysisSchema = z.object({
   fileName: z.string(),
   fileSize: z.number(),
-  fileContent: z.string(),
 });
 
 export type InsertAnalysis = z.infer<typeof insertAnalysisSchema>;
