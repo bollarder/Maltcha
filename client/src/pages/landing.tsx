@@ -15,7 +15,7 @@ export default function Landing() {
               <img src={maltchaIcon} alt="Maltcha" className="w-8 h-8 rounded-lg" />
               <span className="text-xl font-bold text-foreground">Maltcha</span>
             </div>
-            <div className="hidden md:flex items-center space-x-8">
+            <div className="hidden md:flex items-center gap-8">
               <a
                 href="#features"
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors"
