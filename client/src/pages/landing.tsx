@@ -112,13 +112,6 @@ export default function Landing() {
                   </svg>
                 </Button>
               </Link>
-              <Button
-                variant="ghost"
-                size="lg"
-                data-testid="button-demo"
-              >
-                데모 보기
-              </Button>
             </div>
           </div>
 
