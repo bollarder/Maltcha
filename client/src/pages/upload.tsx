@@ -433,7 +433,7 @@ export default function Upload() {
             size="lg"
             onClick={handleAnalyze}
             disabled={!file || analyzeMutation.isPending}
-            className="bg-primary text-black dark:text-white hover:bg-secondary border-2"
+            className="bg-primary border-2 disabled:text-muted-foreground enabled:text-black dark:enabled:text-white hover:bg-secondary"
             data-testid="button-analyze"
           >
             {analyzeMutation.isPending ? "업로드 중..." : "분석 시작하기"}
