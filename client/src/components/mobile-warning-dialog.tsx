@@ -52,7 +52,7 @@ export function MobileWarningDialog({ open, onOpenChange }: MobileWarningDialogP
           </DialogDescription>
         </DialogHeader>
 
-        <div className="bg-accent/50 dark:bg-accent/50 rounded-lg p-4 my-4">
+        <div className="bg-accent dark:bg-accent rounded-lg p-4 my-4">
           <h4 className="font-semibold text-foreground mb-3">💻 PC에서 이용하시면:</h4>
           <ul className="space-y-2 text-sm text-muted-foreground">
             <li className="flex items-center">
