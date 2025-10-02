@@ -202,9 +202,10 @@ export default function Upload() {
           <ol className="space-y-2 text-sm text-muted-foreground ml-7">
             <li>1. 카카오톡에서 분석할 채팅방을 엽니다</li>
             <li>2. 우측 상단 메뉴(≡)를 클릭합니다</li>
-            <li>3. '대화 내보내기'를 선택합니다</li>
-            <li>4. '텍스트로 대화 내용 저장'을 선택합니다</li>
-            <li>5. 저장된 txt 파일을 업로드합니다</li>
+            <li>3. 우측 상단 설정을 클릭합니다</li>
+            <li>4. '대화 내용 내보내기'를 선택합니다</li>
+            <li>5. '텍스트 메시지만 보내기'를 선택합니다</li>
+            <li>6. 저장된 txt 파일을 업로드합니다</li>
           </ol>
         </div>
 
