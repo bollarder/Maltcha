@@ -151,7 +151,7 @@ export default function Loading() {
               </svg>
             </div>
             <div>
-              <h4 className="font-semibold text-foreground mb-1">💡 분석 팁</h4>
+              <h4 className="font-semibold text-foreground mb-1">분석 팁</h4>
               <p className="text-sm text-muted-foreground" data-testid="text-tip">
                 {TIPS[currentTip]}
               </p>
