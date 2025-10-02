@@ -1,5 +1,11 @@
 import { z } from "zod";
-import { pgTable, varchar, text, timestamp, integer } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  varchar,
+  text,
+  timestamp,
+  integer,
+} from "drizzle-orm/pg-core";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 
 // Conversation message structure
@@ -17,36 +23,70 @@ export const analysisResultSchema = z.object({
   fileName: z.string(),
   fileSize: z.number(),
   uploadedAt: z.string(),
-  status: z.enum(['processing', 'completed', 'failed']),
+  status: z.enum(["processing", "completed", "failed"]),
   messages: z.array(messageSchema),
-  stats: z.object({
-    totalMessages: z.number(),
-    participants: z.number(),
-    avgResponseTime: z.string(),
-    sentimentScore: z.number(),
-  }).optional(),
-  charts: z.object({
-    messageFrequency: z.array(z.object({
-      date: z.string(),
-      count: z.number(),
-    })),
-    participantActivity: z.array(z.object({
-      name: z.string(),
-      count: z.number(),
-    })),
-    hourlyActivity: z.array(z.object({
-      hour: z.number(),
-      count: z.number(),
-    })),
-    sentimentDistribution: z.array(z.object({
-      name: z.string(),
-      value: z.number(),
-    })),
-  }).optional(),
-  insights: z.array(z.object({
-    title: z.string(),
-    description: z.string(),
-  })).optional(),
+  stats: z
+    .object({
+      totalMessages: z.number(),
+      participants: z.number(),
+      avgResponseTime: z.string(),
+      sentimentScore: z.number(),
+    })
+    .optional(),
+  charts: z
+    .object({
+      messageFrequency: z.array(
+        z.object({
+          date: z.string(),
+          count: z.number(),
+        }),
+      ),
+      participantActivity: z.array(
+        z.object({
+          name: z.string(),
+          count: z.number(),
+        }),
+      ),
+      hourlyActivity: z.array(
+        z.object({
+          hour: z.number(),
+          count: z.number(),
+        }),
+      ),
+      sentimentDistribution: z.array(
+        z.object({
+          name: z.string(),
+          value: z.number(),
+        }),
+      ),
+    })
+    .optional(),
+  insights: z
+    .array(
+      z.object({
+        title: z.string(),
+        description: z.string(),
+      }),
+    )
+    .optional(),
+  // Stage 1 데이터 추가
+  stage1Data: z
+    .object({
+      basicStats: z.any().optional(),
+      keyInfo: z.any().optional(),
+    })
+    .optional(),
+  // Stage 2 데이터 추가
+  stage2Data: z
+    .object({
+      communicationStyle: z.any().optional(),
+      languagePattern: z.any().optional(),
+      emotionalExpression: z.any().optional(),
+      relationshipDynamics: z.any().optional(),
+      specialPatterns: z.any().optional(),
+      partnerStatus: z.any().optional(),
+    })
+    .optional(),
   error: z.string().optional(),
 });
 
