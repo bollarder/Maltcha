@@ -1,10 +1,11 @@
 import { useRoute, useLocation } from "wouter";
-import { MessageSquare, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import type { AnalysisResult } from "@shared/schema";
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import maltchaIcon from "@assets/Maltcha Icon_1759388201617.jpg";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))'];
 
@@ -74,9 +75,7 @@ export default function SharedResult() {
         <div className="max-w-2xl mx-auto text-center">
           <div className="mb-8">
             <div className="flex items-center justify-center space-x-2 mb-6">
-              <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-                <MessageSquare className="w-6 h-6 text-primary-foreground" />
-              </div>
+              <img src={maltchaIcon} alt="Maltcha" className="w-10 h-10 rounded-lg" />
               <span className="text-2xl font-bold text-foreground">Maltcha</span>
             </div>
           </div>
@@ -123,9 +122,7 @@ export default function SharedResult() {
         {/* Header */}
         <div className="text-center mb-12 fade-in-up">
           <div className="flex items-center justify-center space-x-2 mb-6">
-            <div className="w-10 h-10 rounded-lg bg-primary flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-primary-foreground" />
-            </div>
+            <img src={maltchaIcon} alt="Maltcha" className="w-10 h-10 rounded-lg" />
             <span className="text-2xl font-bold text-foreground">Maltcha</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">소통 스타일 분석 결과</h1>
