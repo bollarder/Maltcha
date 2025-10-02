@@ -3,22 +3,17 @@ import Anthropic from "@anthropic-ai/sdk";
 const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 
 const anthropic = new Anthropic({
-  apiKey:
-    process.env.ANTHROPIC_API_KEY ||
-    process.env.ANTHROPIC_API_KEY_ENV_VAR ||
-    "",
+  apiKey: process.env.ANTHROPIC_API_KEY || "",
 });
 
 export interface ConversationAnalysis {
   sentimentScore: number;
   sentimentDistribution: { name: string; value: number }[];
   insights: { title: string; description: string }[];
-  // Stage 1 데이터 추가
   stage1Data?: {
     basicStats: any;
     keyInfo: any;
   };
-  // Stage 2 데이터 추가
   stage2Data?: {
     communicationStyle: any;
     languagePattern: any;
@@ -36,62 +31,53 @@ export async function analyzeConversation(
   const participants = Array.from(new Set(messages.map((m) => m.participant)));
   const user_name = participants[0] || "사용자";
   const partner_name = participants[1] || "상대방";
-  const relationship_type = "친구";
 
-  // Stage 1: 의미 있는 데이터 추출
+  // Stage 1: 핵심 통계 추출 (간결화)
   const stage1Response = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
-    max_tokens: 4096,
-    system: `당신은 고도로 훈련된 데이터 분석가이자 정보 추출 전문가입니다. 주어진 카카오톡 대화 텍스트와 관계 유형을 바탕으로, 관계의 역학을 파악할 수 있는 핵심 정량 지표와, 나중에 반드시 기억해야 할 중요한 정보를 구조화된 형태로 추출하세요.`,
+    max_tokens: 3000,
+    system: `당신은 대화 데이터 분석 전문가입니다. 주어진 대화에서 핵심 통계와 중요한 정보만 추출하세요.`,
     messages: [
       {
         role: "user",
-        content: `다음 대화 데이터와 정보(관계 유형: ${relationship_type})를 바탕으로 아래 지표들을 추출해줘. 각 지표는 비교 분석이 가능하도록 ${partner_name}과 ${user_name}의 데이터를 명확히 구분해줘.
+        content: `다음 대화를 분석해 JSON으로 응답해줘.
 
-총 메시지 수: ${stats.totalMessages}
 참여자: ${user_name}, ${partner_name}
+총 메시지: ${stats.totalMessages}
 
-대화 샘플 (최근 150개):
+대화 샘플 (최근 200개):
 ${messages
-  .slice(-150)
+  .slice(-200)
   .map((m) => `[${m.timestamp}] ${m.participant}: ${m.content}`)
   .join("\n")}
 
-**[추출할 지표]**
-1. 총 메시지 수
-2. 발신자별 메시지 비율 (${user_name} vs ${partner_name})
-3. 평균 메시지 길이
-4. 시간대별 활동 분포 (새벽/아침/낮/저녁/밤)
-5. 이모티콘 사용 빈도
-6. 질문 vs 답변 비율
-7. 대화 시작 비율
-8. 주제 키워드 (빈도순 상위 20개)
-9. 긍정/부정/중립 메시지 비율
-
-**[핵심 정보 추출]**
-1. 선호도/불호도: ${partner_name}가 좋아하거나 싫어한다고 명시적으로 언급한 내용
-2. 중요 약속/기념일: 날짜가 언급된 약속이나 기념일
-3. 애정/친밀도 표현: "사랑해", "보고싶다", "고마워" 등 친밀감을 나타내는 단어 사용 빈도 (${user_name} vs ${partner_name})
-
-반드시 JSON 형식으로 응답해줘. 예시:
+**필수 출력 형식 (JSON만 출력):**
+\`\`\`json
 {
   "basicStats": {
-    "totalMessages": number,
-    "messageRatio": {"${user_name}": number, "${partner_name}": number},
-    "avgMessageLength": {"${user_name}": number, "${partner_name}": number},
-    "timeDistribution": {"dawn": number, "morning": number, "afternoon": number, "evening": number, "night": number},
-    "emojiFrequency": {"${user_name}": number, "${partner_name}": number},
-    "questionAnswerRatio": {"${user_name}": number, "${partner_name}": number},
-    "conversationStartRatio": {"${user_name}": number, "${partner_name}": number},
-    "topKeywords": [{"word": string, "count": number}],
-    "sentimentRatio": {"positive": number, "neutral": number, "negative": number}
+    "messageRatio": {"${user_name}": 0.52, "${partner_name}": 0.48},
+    "avgMessageLength": {"${user_name}": 45, "${partner_name}": 38},
+    "emojiFrequency": {"${user_name}": 12, "${partner_name}": 8},
+    "sentimentRatio": {"positive": 0.6, "neutral": 0.3, "negative": 0.1},
+    "timeDistribution": [
+      {"hour": "00-06", "count": 5},
+      {"hour": "06-12", "count": 20},
+      {"hour": "12-18", "count": 35},
+      {"hour": "18-24", "count": 40}
+    ]
   },
   "keyInfo": {
-    "preferences": [{"type": "like" | "dislike", "content": string}],
-    "importantDates": [{"date": string, "content": string}],
-    "affectionExpression": {"${user_name}": number, "${partner_name}": number}
+    "preferences": [
+      {"type": "like", "content": "민트초코 좋아함"},
+      {"type": "dislike", "content": "공포영화 싫어함"}
+    ],
+    "importantDates": [
+      {"date": "2024-03-15", "content": "저녁 약속"}
+    ],
+    "affectionKeywords": {"${user_name}": 5, "${partner_name}": 8}
   }
-}`,
+}
+\`\`\``,
       },
     ],
   });
@@ -100,76 +86,69 @@ ${messages
     stage1Response.content[0].type === "text"
       ? stage1Response.content[0].text
       : "{}";
+
   let stage1Data;
   try {
-    const jsonMatch = stage1Text.match(/\{[\s\S]*\}/);
-    stage1Data = JSON.parse(jsonMatch ? jsonMatch[0] : stage1Text);
-  } catch {
-    stage1Data = { basicStats: {}, keyInfo: {} };
+    // JSON 코드 블록 제거
+    const cleanText = stage1Text
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "");
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    stage1Data = JSON.parse(jsonMatch ? jsonMatch[0] : cleanText);
+  } catch (e) {
+    console.error("Stage 1 파싱 실패:", e);
+    stage1Data = {
+      basicStats: {
+        sentimentRatio: { positive: 0.6, neutral: 0.3, negative: 0.1 },
+      },
+      keyInfo: {},
+    };
   }
 
-  // Stage 2: 상황 맥락적 심층 분석
+  // Stage 2: 관계 심층 분석 (핵심만)
   const stage2Response = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
-    max_tokens: 4096,
-    system: `당신은 관계 심리학, 사회 언어학, 비즈니스 커뮤니케이션을 모두 전공한 세계 최고의 온톨로지 분석가입니다. 당신의 임무는 주어진 데이터와 관계 유형에 따라 페르소나를 바꾸어 대화의 숨겨진 맥락과 의도를 읽어내는 것입니다. 분석은 날카롭지만, 단정짓지 않으며, 구체적인 대화 예시를 반드시 근거로 제시하세요.`,
+    max_tokens: 3000,
+    system: `당신은 관계 심리 분석가입니다. 대화 패턴에서 숨겨진 의미를 파악하세요.`,
     messages: [
       {
         role: "user",
-        content: `다음 대화, 통계, 그리고 관계 유형(${relationship_type}) 정보를 바탕으로 ${user_name}과 ${partner_name}의 관계를 심층 분석해줘.
+        content: `${user_name}과 ${partner_name}의 대화를 분석해 JSON으로 응답해줘.
 
-통계 데이터:
-${JSON.stringify(stage1Data, null, 2)}
+통계:
+${JSON.stringify(stage1Data.basicStats, null, 2)}
 
-대화 샘플 (최근 150개):
+최근 대화 (100개):
 ${messages
-  .slice(-150)
-  .map((m) => `[${m.timestamp}] ${m.participant}: ${m.content}`)
+  .slice(-100)
+  .map((m) => `${m.participant}: ${m.content}`)
   .join("\n")}
 
-**[분석 프레임워크]**
-1. 대화 스타일 (경청형 vs 주도형, 공감 표현 빈도, 갈등 회피 vs 직면 성향)
-2. 언어 패턴 (사과/감사 표현 빈도, 완곡 표현 vs 직설적 표현, 자기 검열 신호)
-3. 감정 표현 (이모티콘 의존도, 감정 단어 다양성, 진짜 vs 사회적 감정 구분)
-4. 관계 역학 (주도권 분포, 응답 패턴, 친밀도 변화 추이)
-5. 특이 패턴 (반복되는 주제, 회피하는 주제, 행복/불편 신호)
-
-**[관계 유형별 심층 분석 - ${relationship_type} 모드]**
-- 숨은 의미 파악: 완곡한 표현이나 간접적인 요청의 패턴 분석
-- 감정의 비대칭성: 감정 표현의 차이 포착
-- 상대방 상황 추론: 메시지 길이, 단어 선택, 응답 시간을 바탕으로 현재 상대방의 상태 추측
-
-반드시 JSON 형식으로 응답해줘. 예시:
+**필수 출력 형식 (JSON만 출력):**
+\`\`\`json
 {
   "communicationStyle": {
-    "${user_name}": {"type": string, "traits": [string]},
-    "${partner_name}": {"type": string, "traits": [string]}
-  },
-  "languagePattern": {
-    "apologyFrequency": {"${user_name}": number, "${partner_name}": number},
-    "gratitudeFrequency": {"${user_name}": number, "${partner_name}": number},
-    "indirectExpression": [{"speaker": string, "example": string, "meaning": string}]
+    "${user_name}": {"type": "경청형", "traits": ["공감 표현 많음", "질문 자주 함"]},
+    "${partner_name}": {"type": "주도형", "traits": ["직설적", "답변 중심"]}
   },
   "emotionalExpression": {
-    "emojiDependency": {"${user_name}": "high" | "medium" | "low", "${partner_name}": "high" | "medium" | "low"},
-    "emotionalAsymmetry": string
+    "emojiDependency": {"${user_name}": "high", "${partner_name}": "medium"},
+    "emotionalAsymmetry": "한쪽이 감정 표현을 더 많이 함"
   },
   "relationshipDynamics": {
-    "powerBalance": string,
-    "responsePattern": {"${user_name}": string, "${partner_name}": string},
-    "intimacyTrend": "increasing" | "stable" | "decreasing"
+    "powerBalance": "균형적",
+    "intimacyTrend": "increasing"
   },
   "specialPatterns": {
-    "recurringTopics": [string],
-    "avoidedTopics": [string],
-    "happyMoments": [{"timestamp": string, "context": string}],
-    "tenseMoments": [{"timestamp": string, "context": string}]
+    "recurringTopics": ["일상", "계획"],
+    "happyMoments": [{"timestamp": "2024-01-15", "context": "여행 이야기"}]
   },
   "partnerStatus": {
-    "currentState": string,
-    "suggestion": string
+    "currentState": "최근 메시지가 짧아짐 - 바쁜 상태로 추정",
+    "suggestion": "간단한 응원 메시지가 좋을 듯"
   }
-}`,
+}
+\`\`\``,
       },
     ],
   });
@@ -178,63 +157,59 @@ ${messages
     stage2Response.content[0].type === "text"
       ? stage2Response.content[0].text
       : "{}";
+
   let stage2Data;
   try {
-    const jsonMatch = stage2Text.match(/\{[\s\S]*\}/);
-    stage2Data = JSON.parse(jsonMatch ? jsonMatch[0] : stage2Text);
-  } catch {
+    const cleanText = stage2Text
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "");
+    const jsonMatch = cleanText.match(/\{[\s\S]*\}/);
+    stage2Data = JSON.parse(jsonMatch ? jsonMatch[0] : cleanText);
+  } catch (e) {
+    console.error("Stage 2 파싱 실패:", e);
     stage2Data = {};
   }
 
-  // Stage 3: 실행 가능한 비서 리포트
+  // Stage 3: 실용적 인사이트 (4개로 제한)
   const stage3Response = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
-    max_tokens: 4096,
-    system: `당신은 Maltcha의 AI 소통 비서 'Tea(티)'입니다. 복잡한 분석 결과를 바탕으로, 사용자가 더 나은 관계를 맺고 난감한 상황을 피할 수 있도록, 똑똑하지만 따뜻하고 친근한 리포트를 작성하세요. 칭찬을 먼저 하고, 조심스럽게 제안하며, 사용자가 유료 결제를 할 가치가 있다고 느끼게 만드세요. 모든 응답은 한국어로 작성하세요.`,
+    max_tokens: 2500,
+    system: `당신은 Maltcha의 AI 비서 'Tea'입니다. 따뜻하고 구체적인 조언을 제공하세요.`,
     messages: [
       {
         role: "user",
-        content: `아래 분석 결과를 바탕으로, ${user_name}님만을 위한 'Maltcha 인사이트'를 ${relationship_type}에 맞춰 작성해줘.
+        content: `${user_name}님을 위한 인사이트 4개를 만들어줘.
 
-Stage 1 데이터:
-${JSON.stringify(stage1Data, null, 2)}
+분석 결과:
+통계: ${JSON.stringify(stage1Data.basicStats, null, 2)}
+관계: ${JSON.stringify(stage2Data, null, 2)}
 
-Stage 2 분석:
-${JSON.stringify(stage2Data, null, 2)}
-
-**[리포트 섹션]**
-1. 소통 에너지 (0-100점 + 설명)
-2. 대화 스타일 (타입 + 특징, 예: "OOO님은 '안정적인 정원사' 같은 분이군요.")
-3. 소통 리듬 (시간 패턴과 가장 빛났던 순간)
-4. 감정 표현 방식
-5. 가장 행복했던 순간 (구체적 예시)
-6. 관계를 더 깊게 하려면 (3가지 구체적 제안)
-
-**[고도화 섹션]**
-7. 잊지 말아요, ${partner_name}님의 취향 노트 (선호도/불호도 정리)
-8. Tea의 작은 속삭임 (현재 상대방 상태 추론 + 조언)
-9. 아웃트로: "Maltcha Plus로 두 분의 관계를 더 깊고 향긋하게..."
-
-반드시 JSON 배열 형식으로 4개의 인사이트를 작성해줘. 각 인사이트는 title과 description을 포함해야 해.
-예시:
+**필수 출력 형식 (JSON 배열만 출력):**
+\`\`\`json
 [
   {
-    "title": "소통 에너지: 85점 ⚡",
-    "description": "두 분의 소통은 정말 활발해요! 특히 저녁 시간대에 가장 많은 대화를 나누시네요. 서로에게 관심이 많다는 증거예요."
+    "title": "💬 소통 에너지: 85점",
+    "description": "두 분의 대화는 매우 활발해요! 특히 저녁 시간대에 가장 많은 이야기를 나누시네요."
   },
   {
-    "title": "${partner_name}님은 '따뜻한 응원자' 타입",
-    "description": "상대방은 공감과 격려를 자주 표현하는 스타일이에요. '힘내', '괜찮아' 같은 표현을 ${user_name}님보다 2배 더 많이 사용하셨어요."
+    "title": "🎭 ${partner_name}님은 '따뜻한 응원자' 타입",
+    "description": "공감과 격려를 자주 표현하는 스타일이에요. '힘내', '괜찮아' 같은 말을 자주 사용하시네요."
   },
   {
-    "title": "잊지 말아요, ${partner_name}님의 취향 노트 📝",
-    "description": "최근 대화에서 ${partner_name}님은 '민트초코를 좋아한다'고 했고, '공포영화를 무서워한다'고 했어요. 다음 번 만남 때 참고하면 센스 만점!"
+    "title": "📝 ${partner_name}님의 취향 노트",
+    "description": "${partner_name}님은 '민트초코를 좋아한다'고 했고, '공포영화는 못 본다'고 했어요. 다음 만남에 참고하세요!"
   },
   {
-    "title": "Tea의 속삭임 💭",
-    "description": "최근 ${partner_name}님의 답장이 짧고 빨라진 걸 보니, 바쁜 시기를 보내고 계신 것 같아요. 지금은 가벼운 안부보다 따뜻한 응원 한마디가 더 큰 힘이 될 거예요."
+    "title": "💭 Tea의 조언",
+    "description": "최근 ${partner_name}님의 답장이 짧아진 걸 보니 바쁜 시기인 것 같아요. 지금은 간단한 응원이 더 힘이 될 거예요."
   }
-]`,
+]
+\`\`\`
+
+**규칙:**
+- 반드시 4개의 인사이트만 출력
+- 구체적인 예시 포함
+- 따뜻하고 친근한 톤 유지`,
       },
     ],
   });
@@ -243,33 +218,35 @@ ${JSON.stringify(stage2Data, null, 2)}
     stage3Response.content[0].type === "text"
       ? stage3Response.content[0].text
       : "[]";
+
   let insights;
   try {
-    const jsonMatch = stage3Text.match(/\[[\s\S]*\]/);
-    insights = JSON.parse(jsonMatch ? jsonMatch[0] : stage3Text);
+    const cleanText = stage3Text
+      .replace(/```json\n?/g, "")
+      .replace(/```\n?/g, "");
+    const jsonMatch = cleanText.match(/\[[\s\S]*\]/);
+    insights = JSON.parse(jsonMatch ? jsonMatch[0] : cleanText);
     if (!Array.isArray(insights)) {
       insights = [];
     }
-  } catch {
+  } catch (e) {
+    console.error("Stage 3 파싱 실패:", e);
     insights = [
       {
         title: "소통 에너지 분석 완료",
-        description: `${user_name}님과 ${partner_name}님의 대화를 분석했어요. 두 분의 관계는 특별해 보여요!`,
+        description: `${user_name}님과 ${partner_name}님의 대화를 분석했어요.`,
       },
       {
         title: "대화 스타일",
-        description:
-          "서로 다른 소통 스타일이지만, 그 차이가 오히려 균형을 만들고 있어요.",
+        description: "서로 다른 스타일이지만 균형이 잘 맞아요.",
       },
       {
-        title: "가장 행복했던 순간",
-        description:
-          "대화 속에서 서로에게 진심으로 웃었던 순간들이 발견됐어요.",
+        title: "행복한 순간",
+        description: "대화 속에서 진심으로 웃었던 순간들이 있어요.",
       },
       {
         title: "Tea의 조언",
-        description:
-          "지금처럼 계속 소통하신다면, 더욱 깊은 관계로 발전할 수 있을 거예요.",
+        description: "지금처럼 계속 소통하면 더 깊은 관계가 될 거예요.",
       },
     ];
   }
@@ -313,7 +290,7 @@ ${JSON.stringify(stage2Data, null, 2)}
     sentimentScore,
     sentimentDistribution,
     insights: insights.slice(0, 4),
-    stage1Data, // Stage 1 데이터 반환
-    stage2Data, // Stage 2 데이터 반환
+    stage1Data,
+    stage2Data,
   };
 }
