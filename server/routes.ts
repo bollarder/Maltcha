@@ -158,5 +158,7 @@ async function processAnalysis(analysisId: string, fileContent: string) {
       sentimentDistribution: aiAnalysis.sentimentDistribution,
     },
     insights: aiAnalysis.insights,
+    stage1Data: aiAnalysis.stage1Data,
+    stage2Data: aiAnalysis.stage2Data,
   });
 }

@@ -1,29 +1,20 @@
 import { useState } from "react";
 import { useLocation, useRoute } from "wouter";
-import { Home, Share2, ArrowRight, Lightbulb, TrendingUp, MessageCircle, Heart, Calendar, AlertCircle } from "lucide-react";
+import { Home, Share2, Lightbulb, TrendingUp, MessageCircle, Heart, Calendar, AlertCircle, Sparkles, Clock } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import type { AnalysisResult } from "@shared/schema";
 import {
-  LineChart,
-  Line,
-  BarChart,
-  Bar,
   AreaChart,
   Area,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-
-const COLORS = ['hsl(var(--primary))', 'hsl(142, 71%, 45%)', 'hsl(346, 84%, 61%)'];
 
 export default function Results() {
   const [, params] = useRoute("/results/:id");
@@ -101,7 +92,7 @@ export default function Results() {
     );
   }
 
-  const { stats, charts, insights, stage1Data, stage2Data } = analysis;
+  const { stats, insights, stage1Data, stage2Data } = analysis;
 
   return (
     <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-background">
@@ -110,11 +101,11 @@ export default function Results() {
         <div className="mb-8 fade-in-up">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">분석 결과</h1>
+              <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-2">마음결 노트</h1>
               <p className="text-muted-foreground">{analysis.fileName}</p>
             </div>
             <div className="mt-4 md:mt-0 flex gap-3">
-              <Button variant="outline" onClick={() => setLocation('/')}>
+              <Button variant="outline" onClick={() => setLocation('/')} data-testid="button-home">
                 <Home className="w-5 h-5 mr-2" />
                 홈
               </Button>
@@ -124,213 +115,156 @@ export default function Results() {
 
         {/* Summary Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
+          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-total-messages">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-muted-foreground">총 메시지</span>
               <MessageCircle className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-3xl font-bold text-foreground">{stats?.totalMessages.toLocaleString()}</p>
+            <p className="text-3xl font-bold text-foreground" data-testid="text-total-messages">{stats?.totalMessages.toLocaleString()}</p>
           </div>
 
-          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" style={{ animationDelay: '0.05s' }}>
+          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" style={{ animationDelay: '0.05s' }} data-testid="card-participants">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-muted-foreground">참여자</span>
               <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
             </div>
-            <p className="text-3xl font-bold text-foreground">{stats?.participants}</p>
+            <p className="text-3xl font-bold text-foreground" data-testid="text-participants">{stats?.participants}</p>
           </div>
 
-          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" style={{ animationDelay: '0.1s' }}>
+          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" style={{ animationDelay: '0.1s' }} data-testid="card-energy-score">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-muted-foreground">평균 응답 시간</span>
-              <svg className="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <span className="text-sm text-muted-foreground">소통 에너지 점수</span>
+              <Sparkles className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-3xl font-bold text-foreground">{stats?.avgResponseTime}</p>
+            <p className="text-3xl font-bold text-foreground" data-testid="text-energy-score">{stats?.sentimentScore}점</p>
           </div>
 
-          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" style={{ animationDelay: '0.15s' }}>
+          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" style={{ animationDelay: '0.15s' }} data-testid="card-sentiment-score">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-muted-foreground">감정 점수</span>
               <Heart className="w-5 h-5 text-primary" />
             </div>
-            <p className="text-3xl font-bold text-foreground">{stats?.sentimentScore}%</p>
+            <p className="text-3xl font-bold text-foreground" data-testid="text-sentiment-score">{stats?.sentimentScore}%</p>
           </div>
         </div>
 
-        {/* Stage 3: Key Insights (기존) */}
-        <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 mb-8 fade-in-up">
-          <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
-            <Lightbulb className="w-5 h-5 mr-2 text-primary" />
-            Tea의 마음결 노트 (핵심 인사이트)
-          </h3>
-          <div className="space-y-4">
-            {insights?.map((insight, index) => (
-              <div key={index} className="flex items-start space-x-3 p-4 bg-accent/30 dark:bg-accent/30 rounded-lg">
-                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-                  <span className="text-sm font-bold text-primary-foreground">{index + 1}</span>
-                </div>
-                <div>
-                  <h4 className="font-medium text-foreground mb-1">{insight.title}</h4>
-                  <p className="text-sm text-muted-foreground">{insight.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Stage 1: 데이터 추출 결과 */}
+        {/* Stage 1: 기억해야 할 정보 */}
         {stage1Data && (
           <div className="space-y-8 mb-8">
-            <h2 className="text-2xl font-bold text-foreground flex items-center">
+            <h2 className="text-2xl font-bold text-foreground flex items-center" data-testid="heading-stage1">
               <TrendingUp className="w-6 h-6 mr-2 text-primary" />
-              Stage 1: 의미 있는 데이터 분석
+              기억해야 할 정보
             </h2>
 
-            {/* 기본 통계 */}
-            {stage1Data.basicStats && (
-              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
-                <h3 className="text-lg font-semibold text-foreground mb-4">📊 기본 통계</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {stage1Data.basicStats.messageRatio && (
-                    <div className="p-4 bg-accent/20 rounded-lg">
-                      <h4 className="font-medium text-foreground mb-2">메시지 비율</h4>
-                      <div className="space-y-1 text-sm">
-                        {Object.entries(stage1Data.basicStats.messageRatio).map(([name, ratio]) => (
-                          <div key={name} className="flex justify-between">
-                            <span className="text-muted-foreground">{name}:</span>
-                            <span className="text-foreground font-medium">{((ratio as number) * 100).toFixed(1)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {stage1Data.basicStats.emojiFrequency && (
-                    <div className="p-4 bg-accent/20 rounded-lg">
-                      <h4 className="font-medium text-foreground mb-2">이모티콘 사용 빈도</h4>
-                      <div className="space-y-1 text-sm">
-                        {Object.entries(stage1Data.basicStats.emojiFrequency).map(([name, freq]) => (
-                          <div key={name} className="flex justify-between">
-                            <span className="text-muted-foreground">{name}:</span>
-                            <span className="text-foreground font-medium">{String(freq)}회</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {stage1Data.basicStats.conversationStartRatio && (
-                    <div className="p-4 bg-accent/20 rounded-lg">
-                      <h4 className="font-medium text-foreground mb-2">대화 시작 비율</h4>
-                      <div className="space-y-1 text-sm">
-                        {Object.entries(stage1Data.basicStats.conversationStartRatio).map(([name, ratio]) => (
-                          <div key={name} className="flex justify-between">
-                            <span className="text-muted-foreground">{name}:</span>
-                            <span className="text-foreground font-medium">{((ratio as number) * 100).toFixed(1)}%</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 주제 키워드 */}
-                {stage1Data.basicStats.topKeywords && stage1Data.basicStats.topKeywords.length > 0 && (
-                  <div className="mt-6">
-                    <h4 className="font-medium text-foreground mb-3">🔑 주요 대화 키워드 TOP 20</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {stage1Data.basicStats.topKeywords.slice(0, 20).map((keyword: any, idx: number) => (
-                        <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm">
-                          {keyword.word} ({keyword.count})
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* 핵심 정보 (선호도/기념일) */}
-            {stage1Data.keyInfo && (
-              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* 취향 노트 */}
+              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-preferences">
                 <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                   <Heart className="w-5 h-5 mr-2 text-primary" />
-                  💡 잊지 말아야 할 핵심 정보
+                  취향 노트
                 </h3>
-
-                {/* 선호도/불호도 */}
-                {stage1Data.keyInfo.preferences && stage1Data.keyInfo.preferences.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="font-medium text-foreground mb-3">좋아하는 것 / 싫어하는 것</h4>
-                    <div className="space-y-2">
-                      {stage1Data.keyInfo.preferences.map((pref: any, idx: number) => (
-                        <div key={idx} className="flex items-start space-x-2 p-3 bg-accent/20 rounded-lg">
-                          <span className="text-lg">
-                            {pref.type === 'like' ? '👍' : '👎'}
-                          </span>
-                          <p className="text-sm text-foreground">{pref.content}</p>
-                        </div>
-                      ))}
-                    </div>
+                {stage1Data.keyInfo?.preferences && stage1Data.keyInfo.preferences.length > 0 ? (
+                  <div className="space-y-3">
+                    {stage1Data.keyInfo.preferences.map((pref: any, idx: number) => (
+                      <div key={idx} className="flex items-start space-x-3 p-3 bg-accent/20 rounded-lg" data-testid={`preference-${idx}`}>
+                        <span className="text-xl flex-shrink-0">
+                          {pref.type === 'like' ? '👍' : '👎'}
+                        </span>
+                        <p className="text-sm text-foreground">{pref.content}</p>
+                      </div>
+                    ))}
                   </div>
-                )}
-
-                {/* 중요 약속/기념일 */}
-                {stage1Data.keyInfo.importantDates && stage1Data.keyInfo.importantDates.length > 0 && (
-                  <div className="mb-6">
-                    <h4 className="font-medium text-foreground mb-3 flex items-center">
-                      <Calendar className="w-4 h-4 mr-2" />
-                      중요한 날짜 & 약속
-                    </h4>
-                    <div className="space-y-2">
-                      {stage1Data.keyInfo.importantDates.map((date: any, idx: number) => (
-                        <div key={idx} className="p-3 bg-accent/20 rounded-lg">
-                          <p className="text-sm font-medium text-primary">{date.date}</p>
-                          <p className="text-sm text-foreground mt-1">{date.content}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 애정/친밀도 표현 */}
-                {stage1Data.keyInfo.affectionExpression && (
-                  <div>
-                    <h4 className="font-medium text-foreground mb-3">💕 애정 표현 빈도</h4>
-                    <div className="grid grid-cols-2 gap-4">
-                      {Object.entries(stage1Data.keyInfo.affectionExpression).map(([name, count]) => (
-                        <div key={name} className="p-4 bg-accent/20 rounded-lg text-center">
-                          <p className="text-sm text-muted-foreground mb-1">{name}</p>
-                          <p className="text-2xl font-bold text-primary">{String(count)}회</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">취향 정보가 없습니다.</p>
                 )}
               </div>
-            )}
+
+              {/* 중요한 날들 */}
+              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-important-dates">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                  <Calendar className="w-5 h-5 mr-2 text-primary" />
+                  중요한 날들
+                </h3>
+                {stage1Data.keyInfo?.importantDates && stage1Data.keyInfo.importantDates.length > 0 ? (
+                  <div className="space-y-3">
+                    {stage1Data.keyInfo.importantDates.map((date: any, idx: number) => (
+                      <div key={idx} className="p-3 bg-accent/20 rounded-lg" data-testid={`important-date-${idx}`}>
+                        <p className="text-sm font-medium text-primary mb-1">{date.date}</p>
+                        <p className="text-sm text-foreground">{date.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">중요한 날짜 정보가 없습니다.</p>
+                )}
+              </div>
+
+              {/* 주요 키워드 */}
+              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-keywords">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                  <MessageCircle className="w-5 h-5 mr-2 text-primary" />
+                  주요 키워드
+                </h3>
+                {stage1Data.basicStats?.topKeywords && stage1Data.basicStats.topKeywords.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {stage1Data.basicStats.topKeywords.slice(0, 10).map((keyword: any, idx: number) => (
+                      <span key={idx} className="px-3 py-1 bg-primary/10 text-primary rounded-full text-sm" data-testid={`keyword-${idx}`}>
+                        {keyword.word}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">키워드 정보가 없습니다.</p>
+                )}
+              </div>
+
+              {/* 시간대별 활동 */}
+              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-time-distribution">
+                <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
+                  <Clock className="w-5 h-5 mr-2 text-primary" />
+                  시간대별 활동
+                </h3>
+                {stage1Data.basicStats?.timeDistribution && stage1Data.basicStats.timeDistribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <AreaChart data={stage1Data.basicStats.timeDistribution}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="hour" stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
+                      <Tooltip 
+                        contentStyle={{ 
+                          backgroundColor: 'hsl(var(--card))', 
+                          border: '1px solid hsl(var(--border))',
+                          borderRadius: '8px'
+                        }}
+                      />
+                      <Area type="monotone" dataKey="count" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <p className="text-sm text-muted-foreground">시간대별 활동 정보가 없습니다.</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
 
         {/* Stage 2: 심층 분석 결과 */}
         {stage2Data && (
           <div className="space-y-8 mb-8">
-            <h2 className="text-2xl font-bold text-foreground flex items-center">
+            <h2 className="text-2xl font-bold text-foreground flex items-center" data-testid="heading-stage2">
               <MessageCircle className="w-6 h-6 mr-2 text-primary" />
-              Stage 2: 상황 맥락적 심층 분석
+              심층 분석
             </h2>
 
             {/* 대화 스타일 */}
             {stage2Data.communicationStyle && (
-              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
+              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-communication-style">
                 <h3 className="text-lg font-semibold text-foreground mb-4">🎭 대화 스타일</h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {Object.entries(stage2Data.communicationStyle).map(([name, style]: [string, any]) => (
-                    <div key={name} className="p-4 bg-accent/20 rounded-lg">
+                    <div key={name} className="p-4 bg-accent/20 rounded-lg" data-testid={`comm-style-${name}`}>
                       <h4 className="font-medium text-foreground mb-2">{name}</h4>
                       <p className="text-sm text-primary mb-2">타입: {style.type}</p>
                       <ul className="space-y-1">
@@ -346,7 +280,7 @@ export default function Results() {
 
             {/* 언어 패턴 */}
             {stage2Data.languagePattern && (
-              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
+              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-language-pattern">
                 <h3 className="text-lg font-semibold text-foreground mb-4">💬 언어 패턴 분석</h3>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -379,16 +313,15 @@ export default function Results() {
                   )}
                 </div>
 
-                {/* 숨은 의미 */}
                 {stage2Data.languagePattern.indirectExpression && stage2Data.languagePattern.indirectExpression.length > 0 && (
                   <div>
                     <h4 className="font-medium text-foreground mb-3 flex items-center">
                       <AlertCircle className="w-4 h-4 mr-2" />
-                      🔍 숨은 의미 파악 (완곡한 표현)
+                      🔍 숨은 의미 파악
                     </h4>
                     <div className="space-y-3">
                       {stage2Data.languagePattern.indirectExpression.map((expr: any, idx: number) => (
-                        <div key={idx} className="p-4 bg-accent/30 rounded-lg border-l-4 border-primary">
+                        <div key={idx} className="p-4 bg-accent/30 rounded-lg border-l-4 border-primary" data-testid={`indirect-expr-${idx}`}>
                           <p className="text-sm font-medium text-foreground mb-1">{expr.speaker}: "{expr.example}"</p>
                           <p className="text-sm text-muted-foreground">→ 숨은 의미: {expr.meaning}</p>
                         </div>
@@ -401,7 +334,7 @@ export default function Results() {
 
             {/* 감정 표현 */}
             {stage2Data.emotionalExpression && (
-              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
+              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-emotional-expression">
                 <h3 className="text-lg font-semibold text-foreground mb-4">😊 감정 표현 방식</h3>
 
                 {stage2Data.emotionalExpression.emojiDependency && (
@@ -431,7 +364,7 @@ export default function Results() {
 
             {/* 관계 역학 */}
             {stage2Data.relationshipDynamics && (
-              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
+              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-relationship-dynamics">
                 <h3 className="text-lg font-semibold text-foreground mb-4">⚖️ 관계 역학</h3>
 
                 <div className="space-y-4">
@@ -470,7 +403,7 @@ export default function Results() {
 
             {/* 특이 패턴 */}
             {stage2Data.specialPatterns && (
-              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
+              <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid="card-special-patterns">
                 <h3 className="text-lg font-semibold text-foreground mb-4">🔎 특이 패턴 발견</h3>
 
                 <div className="space-y-6">
@@ -505,7 +438,7 @@ export default function Results() {
                       <h4 className="font-medium text-foreground mb-3">😄 가장 행복했던 순간들</h4>
                       <div className="space-y-2">
                         {stage2Data.specialPatterns.happyMoments.map((moment: any, idx: number) => (
-                          <div key={idx} className="p-3 bg-green-500/10 rounded-lg border-l-4 border-green-500">
+                          <div key={idx} className="p-3 bg-green-500/10 rounded-lg border-l-4 border-green-500" data-testid={`happy-moment-${idx}`}>
                             <p className="text-xs text-muted-foreground mb-1">{moment.timestamp}</p>
                             <p className="text-sm text-foreground">{moment.context}</p>
                           </div>
@@ -519,7 +452,7 @@ export default function Results() {
                       <h4 className="font-medium text-foreground mb-3">😰 긴장된 순간들</h4>
                       <div className="space-y-2">
                         {stage2Data.specialPatterns.tenseMoments.map((moment: any, idx: number) => (
-                          <div key={idx} className="p-3 bg-yellow-500/10 rounded-lg border-l-4 border-yellow-500">
+                          <div key={idx} className="p-3 bg-yellow-500/10 rounded-lg border-l-4 border-yellow-500" data-testid={`tense-moment-${idx}`}>
                             <p className="text-xs text-muted-foreground mb-1">{moment.timestamp}</p>
                             <p className="text-sm text-foreground">{moment.context}</p>
                           </div>
@@ -533,7 +466,7 @@ export default function Results() {
 
             {/* 상대방 현재 상태 */}
             {stage2Data.partnerStatus && (
-              <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl shadow-lg p-6 fade-in-up border-2 border-primary/20">
+              <div className="bg-gradient-to-r from-primary/10 to-primary/5 rounded-xl shadow-lg p-6 fade-in-up border-2 border-primary/20" data-testid="card-partner-status">
                 <h3 className="text-lg font-semibold text-foreground mb-4 flex items-center">
                   💭 Tea의 상대방 상태 분석
                 </h3>
@@ -552,97 +485,34 @@ export default function Results() {
           </div>
         )}
 
-        {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
-            <h3 className="text-lg font-semibold text-foreground mb-4">메시지 빈도</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <LineChart data={charts?.messageFrequency || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="date" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Line type="monotone" dataKey="count" stroke="hsl(var(--primary))" strokeWidth={2} />
-              </LineChart>
-            </ResponsiveContainer>
+        {/* Stage 3: Tea의 조언 */}
+        {insights && insights.length > 0 && (
+          <div className="space-y-8 mb-8">
+            <h2 className="text-2xl font-bold text-foreground flex items-center" data-testid="heading-stage3">
+              <Lightbulb className="w-6 h-6 mr-2 text-primary" />
+              Tea의 마음결 노트
+            </h2>
+            
+            <div className="space-y-4">
+              {insights.map((insight, index) => (
+                <div key={index} className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up" data-testid={`insight-card-${index}`}>
+                  <div className="flex items-start space-x-3">
+                    <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-sm font-bold text-primary-foreground">{index + 1}</span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-foreground mb-2">{insight.title}</h3>
+                      <p className="text-sm text-muted-foreground">{insight.description}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-
-          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
-            <h3 className="text-lg font-semibold text-foreground mb-4">참여자별 활동</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={charts?.participantActivity || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="name" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Bar dataKey="messages" fill="hsl(var(--primary))" radius={[8, 8, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
-            <h3 className="text-lg font-semibold text-foreground mb-4">시간대별 활동</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <AreaChart data={charts?.hourlyActivity || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="hour" stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <YAxis stroke="hsl(var(--muted-foreground))" fontSize={12} />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-                <Area type="monotone" dataKey="count" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-
-          <div className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up">
-            <h3 className="text-lg font-semibold text-foreground mb-4">감정 분석</h3>
-            <ResponsiveContainer width="100%" height={250}>
-              <PieChart>
-                <Pie
-                  data={charts?.sentimentDistribution || []}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={(entry) => entry.name}
-                  outerRadius={80}
-                  fill="hsl(var(--primary))"
-                  dataKey="value"
-                >
-                  {(charts?.sentimentDistribution || []).map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--card))', 
-                    border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+        )}
 
         {/* Share Section */}
-        <div className="bg-primary/10 rounded-2xl p-8 text-center fade-in-up mt-8">
+        <div className="bg-primary/10 rounded-2xl p-8 text-center fade-in-up mt-8" data-testid="section-share">
           <div className="max-w-2xl mx-auto">
             <h3 className="text-2xl font-bold text-foreground mb-3">
               📱 링크로 공유하기
@@ -655,6 +525,7 @@ export default function Results() {
               disabled={isSharing}
               className="bg-primary text-primary-foreground hover:bg-secondary transform hover:scale-105 transition-all shadow-lg hover:shadow-xl"
               size="lg"
+              data-testid="button-share"
             >
               {isSharing ? (
                 <>
@@ -677,6 +548,7 @@ export default function Results() {
             onClick={() => setLocation('/upload')}
             className="bg-primary text-primary-foreground hover:bg-secondary"
             size="lg"
+            data-testid="button-new-analysis"
           >
             새로운 대화 분석하기
           </Button>
@@ -685,6 +557,7 @@ export default function Results() {
             onClick={() => setLocation('/')}
             className="border-2"
             size="lg"
+            data-testid="button-home-bottom"
           >
             <Home className="w-5 h-5 mr-2" />
             홈으로 돌아가기
