@@ -6,7 +6,6 @@ import {
   processConversationData,
   type Message,
   type ProcessedData,
-  type RawExtraction,
 } from "./data-processor";
 
 const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
@@ -14,6 +13,11 @@ const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 const anthropic = new Anthropic({
   apiKey: process.env.ANTHROPIC_API_KEY || "",
 });
+
+export interface BasicStats {
+  totalMessages: number;
+  participants: number;
+}
 
 export interface ConversationAnalysis {
   sentimentScore: number;
@@ -29,152 +33,61 @@ export interface ConversationAnalysis {
   };
 }
 
-// JSON 파싱 유틸리티
-function robustJsonParse(
-  text: string,
-  type: "object" | "array" = "object"
-): any {
-  const attempts: Array<() => any> = [];
-
-  attempts.push(() => {
-    const cleaned = text
-      .replace(/```json\n?/g, "")
-      .replace(/```\n?/g, "")
-      .trim();
-    return JSON.parse(cleaned);
-  });
-
-  attempts.push(() => {
-    const pattern = type === "array" ? /\[[\s\S]*\]/ : /\{[\s\S]*\}/;
-    const match = text.match(pattern);
-    if (!match) throw new Error("No JSON found");
-    return JSON.parse(match[0]);
-  });
-
-  attempts.push(() => {
-    const startChar = type === "array" ? "[" : "{";
-    const endChar = type === "array" ? "]" : "}";
-    const startIdx = text.indexOf(startChar);
-    const endIdx = text.lastIndexOf(endChar);
-    if (startIdx === -1 || endIdx === -1 || startIdx >= endIdx) {
-      throw new Error("Invalid JSON structure");
-    }
-    return JSON.parse(text.substring(startIdx, endIdx + 1));
-  });
-
-  for (let i = 0; i < attempts.length; i++) {
-    try {
-      const result = attempts[i]();
-      if (result) {
-        if (i > 0) console.log(`JSON 파싱 성공: 시도 ${i + 1}번째 방법 사용`);
-        return result;
-      }
-    } catch (e) {
-      if (i === attempts.length - 1) {
-        console.error(`모든 JSON 파싱 시도 실패:`, e);
-      }
-    }
+// JSON 파싱 헬퍼 함수
+function parseJSON(response: any): any {
+  const text = response.content[0].type === 'text' 
+    ? response.content[0].text 
+    : '{}';
+    
+  try {
+    const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
+    return JSON.parse(jsonMatch ? jsonMatch[0] : text);
+  } catch {
+    console.error("JSON 파싱 실패");
+    return {};
   }
-
-  return null;
-}
-
-// 관계별 분석 포인트 생성
-function getAnalysisPoints(primary: string, secondary: string[]) {
-  const points: string[] = [];
-  const allRelationships = [primary, ...secondary];
-
-  if (allRelationships.some((r) => ["연인", "썸"].includes(r))) {
-    points.push("- 애정 표현 패턴과 진정성");
-    points.push("- 감정 비대칭 분석");
-    if (primary === "썸") {
-      points.push("- 썸 특화: 탐색적 질문, 조심스러운 표현");
-    }
-  }
-
-  if (allRelationships.some((r) => ["업무", "파트너"].includes(r))) {
-    points.push("- 업무 효율과 의사결정 패턴");
-    points.push("- 역할 분담과 책임 분배");
-  }
-
-  if (allRelationships.includes("가족")) {
-    points.push("- 존댓말/반말 패턴");
-    points.push("- 세대 간 소통 방식");
-  }
-
-  if (allRelationships.includes("멘토")) {
-    points.push("- 조언/피드백 수용도");
-    points.push("- 상하 관계의 편안함");
-  }
-
-  if (allRelationships.includes("친구")) {
-    points.push("- 농담과 장난의 빈도");
-    points.push("- 일상 공유와 공감");
-  }
-
-  points.push("- 대화 스타일과 친밀도 변화");
-  points.push("- 응답 패턴과 메시지 균형");
-
-  if (secondary.length > 0) {
-    points.push(`- 복합 관계: ${primary}과 ${secondary.join(", ")}의 균형`);
-  }
-
-  return points.join("\n");
 }
 
 // 메인 분석 함수
 export async function analyzeConversation(
-  messages: { timestamp: string; participant: string; content: string }[],
-  stats: { totalMessages: number; participants: number },
+  messages: Message[],
+  stats: BasicStats,
   primaryRelationship: string = "친구",
   secondaryRelationships: string[] = []
 ): Promise<ConversationAnalysis> {
+  
   const participants = Array.from(new Set(messages.map((m) => m.participant)));
-  const user_name = participants[0] || "사용자";
-  const partner_name = participants[1] || "상대방";
-
+  const userName = participants[0] || "사용자";
+  const partnerName = participants[1] || "상대방";
+  
   const relationshipContext =
     secondaryRelationships.length > 0
       ? `${primaryRelationship} (주요) + ${secondaryRelationships.join(", ")} (부가적)`
       : primaryRelationship;
 
-  console.log(
-    `\n======== 4단계 분석 파이프라인 시작 ========`
-  );
+  console.log("\n======== 4단계 분석 파이프라인 시작 ========");
   console.log(`관계: ${relationshipContext}, 메시지: ${messages.length}개\n`);
 
-  // ========================================
-  // STEP 1: AI - 정보 추출만 (텍스트 마이닝)
-  // ========================================
+  // ===== STEP 1: AI - 정보 찾기만 =====
   console.log("Step 1: AI 정보 추출 중...");
-
-  const step1Response = await anthropic.messages.create({
+  
+  const extractionResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
-    max_tokens: 2500,
-    system: `당신은 대화 분석 전문가입니다. 대화 샘플에서 선호도, 중요 날짜, 키워드만 추출하세요. 계산이나 분석은 하지 마세요.`,
-    messages: [
-      {
-        role: "user",
-        content: `${user_name}과 ${partner_name}의 대화에서 정보를 추출해 JSON으로 응답해줘.
+    max_tokens: 3000,
+    system: `당신은 정보 추출 전문가입니다. 대화에서 다음 정보만 찾아서 나열하세요:
+1. 상대방이 명시적으로 "좋아한다"고 말한 것들
+2. 상대방이 명시적으로 "싫어한다"고 말한 것들  
+3. 날짜가 언급된 약속이나 이벤트
+4. "사랑해", "보고싶어", "고마워" 등 애정 표현 문장들
 
-**대화 샘플 (최근 200개 + 랜덤 50개):**
-${messages
-  .slice(-200)
-  .map((m) => `[${m.timestamp}] ${m.participant}: ${m.content}`)
-  .join("\n")}
+**중요: 해석하지 말고, 찾은 내용만 JSON으로 출력하세요.**`,
+    messages: [{
+      role: 'user',
+      content: `${userName}과 ${partnerName}의 대화 샘플 (최근 200개):
 
-${
-  messages.length > 200
-    ? `\n---과거 샘플---\n${Array.from(
-        { length: Math.min(50, messages.length - 200) },
-        () => messages[Math.floor(Math.random() * (messages.length - 200))]
-      )
-        .map((m) => `[${m.timestamp}] ${m.participant}: ${m.content}`)
-        .join("\n")}`
-    : ""
-}
+${messages.slice(-200).map(m => `${m.participant}: ${m.content}`).join('\n')}
 
-**추출할 정보 (JSON만):**
+다음 형식의 JSON으로 응답하세요:
 \`\`\`json
 {
   "preferences": [
@@ -182,92 +95,60 @@ ${
     {"type": "dislike", "content": "싫어한다고 언급한 것"}
   ],
   "importantDates": [
-    {"date": "YYYY-MM-DD", "content": "약속/기념일"}
+    {"date": "YYYY-MM-DD", "content": "약속/이벤트"}
   ],
   "topKeywords": [
     {"word": "자주 나온 단어", "count": 추정 빈도}
   ]
 }
-\`\`\`
-
-**주의:** 계산이나 분석 없이 추출만 하세요.`,
-      },
-    ],
+\`\`\``
+    }]
   });
-
-  const step1Text =
-    step1Response.content[0].type === "text"
-      ? step1Response.content[0].text
-      : "{}";
-
-  let rawExtraction: RawExtraction = {};
-  try {
-    rawExtraction = robustJsonParse(step1Text, "object") || {};
-  } catch (e) {
-    console.error("Step 1 파싱 실패:", e);
-  }
-
+  
+  const rawExtraction = parseJSON(extractionResponse);
   console.log("Step 1 완료 ✓");
-
-  // ========================================
-  // STEP 2: 코드 - 정확한 계산 및 가공
-  // ========================================
+  
+  // ===== STEP 2: 코드 - 계산 & 가공 =====
   console.log("Step 2: 데이터 처리 및 계산 중...");
-
-  const processedData = processConversationData(
-    messages as Message[],
-    rawExtraction
-  );
-
+  
+  const processedData = processConversationData(messages, rawExtraction);
+  
   console.log("Step 2 완료 ✓");
   console.log(`  - 티키타카 지수: ${processedData.tikitakaScore}점`);
-  console.log(`  - 메시지 비율: ${user_name} ${(processedData.messageRatio[user_name] * 100).toFixed(0)}% / ${partner_name} ${(processedData.messageRatio[partner_name] * 100).toFixed(0)}%`);
-
-  // ========================================
-  // STEP 3: AI - 심층 분석만 (심리학적 해석)
-  // ========================================
+  console.log(`  - 메시지 비율: ${userName} ${(processedData.messageRatio[userName] * 100).toFixed(0)}% / ${partnerName} ${(processedData.messageRatio[partnerName] * 100).toFixed(0)}%`);
+  
+  // ===== STEP 3: AI - 심층 분석만 =====
   console.log("Step 3: 심층 분석 중...");
-
-  const analysisPoints = getAnalysisPoints(
-    primaryRelationship,
-    secondaryRelationships
-  );
-
-  const step3Response = await anthropic.messages.create({
+  
+  const analysisResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
     max_tokens: 3000,
-    system: `당신은 관계 심리 분석가입니다. 주어진 데이터와 대화 패턴에서 심리학적 해석만 제공하세요. 글쓰기는 하지 마세요.`,
-    messages: [
-      {
-        role: "user",
-        content: `${user_name}과 ${partner_name}의 관계(${relationshipContext})를 분석해 JSON으로 응답해줘.
+    system: `당신은 관계 심리 전문가입니다. 주어진 통계 데이터만을 바탕으로 
+두 사람의 소통 스타일, 관계 역학, 숨겨진 패턴을 분석하세요.
 
-**계산된 데이터:**
-- 티키타카 지수: ${processedData.tikitakaScore}점
-- 메시지 비율: ${user_name} ${(processedData.messageRatio[user_name] * 100).toFixed(0)}%, ${partner_name} ${(processedData.messageRatio[partner_name] * 100).toFixed(0)}%
-- 평균 메시지 길이: ${user_name} ${processedData.avgMessageLength[user_name]}자, ${partner_name} ${processedData.avgMessageLength[partner_name]}자
-- 이모티콘: ${user_name} ${processedData.emojiCount[user_name]}개, ${partner_name} ${processedData.emojiCount[partner_name]}개
-- 질문 비율: ${user_name} ${(processedData.questionRatio[user_name] * 100).toFixed(0)}%, ${partner_name} ${(processedData.questionRatio[partner_name] * 100).toFixed(0)}%
-- 평균 응답 시간: ${user_name} ${processedData.avgResponseTime[user_name]}분, ${partner_name} ${processedData.avgResponseTime[partner_name]}분
+**중요: 대화 원문을 보지 말고, 제공된 통계 데이터만 분석하세요.**`,
+    messages: [{
+      role: 'user',
+      content: `${userName}과 ${partnerName}의 대화 통계 (관계: ${relationshipContext}):
 
-**관계별 분석 포인트:**
-${analysisPoints}
+${JSON.stringify(processedData, null, 2)}
 
-**최근 대화 (100개):**
-${messages
-  .slice(-100)
-  .map((m) => `${m.participant}: ${m.content}`)
-  .join("\n")}
+이 데이터를 바탕으로 다음을 분석해주세요:
+1. 소통 스타일 (경청형/주도형)
+2. 감정 표현 방식
+3. 관계 역학 (주도권, 친밀도 추이)
+4. 특이 패턴 (반복 주제, 회피 주제)
+5. 상대방 상태 및 조언
 
-**필수 출력 (JSON만, 분석만):**
+다음 형식의 JSON으로 응답하세요:
 \`\`\`json
 {
   "communicationStyle": {
-    "${user_name}": {"type": "경청형/주도형", "traits": ["특징1", "특징2"]},
-    "${partner_name}": {"type": "경청형/주도형", "traits": ["특징1", "특징2"]}
+    "${userName}": {"type": "경청형/주도형", "traits": ["특징1", "특징2"]},
+    "${partnerName}": {"type": "경청형/주도형", "traits": ["특징1", "특징2"]}
   },
   "emotionalExpression": {
-    "emojiDependency": {"${user_name}": "high/medium/low", "${partner_name}": "high/medium/low"},
+    "emojiDependency": {"${userName}": "high/medium/low", "${partnerName}": "high/medium/low"},
     "emotionalAsymmetry": "한 문장 분석"
   },
   "relationshipDynamics": {
@@ -283,61 +164,40 @@ ${messages
     "suggestion": "조언"
   }
 }
-\`\`\`
-
-**주의:** 분석만 하고 사용자 친화적 글은 쓰지 마세요.`,
-      },
-    ],
+\`\`\``
+    }]
   });
-
-  const step3Text =
-    step3Response.content[0].type === "text"
-      ? step3Response.content[0].text
-      : "{}";
-
-  let deepAnalysis;
-  try {
-    deepAnalysis = robustJsonParse(step3Text, "object") || {};
-  } catch (e) {
-    console.error("Step 3 파싱 실패:", e);
-    deepAnalysis = {
-      communicationStyle: {},
-      emotionalExpression: {},
-      relationshipDynamics: {},
-      specialPatterns: {},
-      partnerStatus: {},
-    };
-  }
-
+  
+  const deepAnalysis = parseJSON(analysisResponse);
   console.log("Step 3 완료 ✓");
-
-  // ========================================
-  // STEP 4: AI - 글쓰기만 (사용자 리포트)
-  // ========================================
+  
+  // ===== STEP 4: AI - 글쓰기만 =====
   console.log("Step 4: 인사이트 생성 중...");
-
-  const step4Response = await anthropic.messages.create({
+  
+  const reportResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
     max_tokens: 2500,
-    system: `당신은 Maltcha의 AI 비서 'Tea'입니다. ${relationshipContext} 관계에 맞춰 따뜻하고 구체적인 인사이트 4개를 작성하세요.`,
-    messages: [
-      {
-        role: "user",
-        content: `${user_name}님을 위한 인사이트 4개를 만들어줘.
+    system: `당신은 Maltcha의 AI 비서 'Tea'입니다. 
+분석 결과를 따뜻하고 친근하게 전달하는 것이 당신의 역할입니다.
 
-**관계: ${relationshipContext}**
+관계 유형에 맞는 톤을 사용하세요:
+- 연인/썸: 애정 어린 톤, 감정에 초점
+- 업무/파트너: 전문적이고 효율적인 톤
+- 가족: 따뜻하고 존중하는 톤
+- 친구: 편안하고 솔직한 톤`,
+    messages: [{
+      role: 'user',
+      content: `다음 데이터와 분석 결과를 바탕으로, ${userName}님을 위한 4개의 인사이트를 작성해주세요.
 
-**계산된 지표:**
-- 티키타카 지수: ${processedData.tikitakaScore}점
-- 총 메시지: ${processedData.totalMessages}개
-- 메시지 비율: ${user_name} ${(processedData.messageRatio[user_name] * 100).toFixed(0)}% vs ${partner_name} ${(processedData.messageRatio[partner_name] * 100).toFixed(0)}%
-- 긍정 메시지: ${(processedData.sentimentRatio.positive * 100).toFixed(0)}%
-- 선호도: 좋아함 ${processedData.preferences.likes.length}개, 싫어함 ${processedData.preferences.dislikes.length}개
+**관계 유형: ${relationshipContext}**
+
+**통계 데이터:**
+${JSON.stringify(processedData, null, 2)}
 
 **심층 분석:**
 ${JSON.stringify(deepAnalysis, null, 2)}
 
-**필수 출력 (JSON 배열만):**
+다음 형식의 JSON 배열로 응답하세요:
 \`\`\`json
 [
   {
@@ -345,11 +205,11 @@ ${JSON.stringify(deepAnalysis, null, 2)}
     "description": "구체적인 설명과 칭찬 (3-4문장)"
   },
   {
-    "title": "🎭 ${partner_name}님의 대화 스타일",
+    "title": "🎭 ${partnerName}님의 대화 스타일",
     "description": "타입과 특징 설명 (3-4문장)"
   },
   {
-    "title": "📝 ${partner_name}님의 취향 노트",
+    "title": "📝 ${partnerName}님의 취향 노트",
     "description": "좋아하는 것/싫어하는 것 구체적으로 (3-4문장)"
   },
   {
@@ -360,55 +220,37 @@ ${JSON.stringify(deepAnalysis, null, 2)}
 \`\`\`
 
 **규칙:**
-- 정확히 4개만
-- ${relationshipContext} 관계 톤
-- 구체적 수치와 예시
-- 따뜻하고 친근한 톤`,
-      },
-    ],
+- 정확히 4개만 출력
+- ${relationshipContext} 관계에 맞는 톤
+- 구체적인 수치와 예시 포함
+- 따뜻하고 친근한 어조`
+    }]
   });
-
-  const step4Text =
-    step4Response.content[0].type === "text"
-      ? step4Response.content[0].text
-      : "[]";
-
-  let insights;
-  try {
-    const parsed = robustJsonParse(step4Text, "array");
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      insights = parsed;
-    } else {
-      throw new Error("Invalid array");
-    }
-  } catch (e) {
-    console.error("Step 4 파싱 실패:", e);
-    insights = [
-      {
-        title: `💬 티키타카 지수: ${processedData.tikitakaScore}점`,
-        description: `${user_name}님과 ${partner_name}님의 ${processedData.totalMessages}개 메시지를 분석했어요!`,
-      },
-      {
-        title: "🎭 대화 스타일",
-        description: "서로 다른 스타일이지만 잘 어울려요.",
-      },
-      {
-        title: "📝 특별한 순간들",
-        description: "대화 속에서 진심으로 소통했던 순간들이 있어요.",
-      },
-      {
-        title: "💭 Tea의 조언",
-        description: `${relationshipContext} 관계에서 지금처럼 계속 소통하면 더 깊은 관계가 될 거예요.`,
-      },
-    ];
-  }
-
+  
+  const insightsArray = parseJSON(reportResponse);
+  const insights = Array.isArray(insightsArray) ? insightsArray : [
+    {
+      title: `💬 티키타카 지수: ${processedData.tikitakaScore}점`,
+      description: `${userName}님과 ${partnerName}님의 ${processedData.totalMessages}개 메시지를 분석했어요!`,
+    },
+    {
+      title: "🎭 대화 스타일",
+      description: "서로 다른 스타일이지만 잘 어울려요.",
+    },
+    {
+      title: "📝 특별한 순간들",
+      description: "대화 속에서 진심으로 소통했던 순간들이 있어요.",
+    },
+    {
+      title: "💭 Tea의 조언",
+      description: `${relationshipContext} 관계에서 지금처럼 계속 소통하면 더 깊은 관계가 될 거예요.`,
+    },
+  ];
+  
   console.log("Step 4 완료 ✓");
-  console.log(`======== 분석 완료 ========\n`);
-
-  // ========================================
+  console.log("======== 분석 완료 ========\n");
+  
   // 최종 결과 조합
-  // ========================================
   const sentimentScore = Math.round(
     (processedData.sentimentRatio.positive * 100 +
       processedData.sentimentRatio.neutral * 50) /
