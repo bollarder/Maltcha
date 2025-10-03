@@ -215,70 +215,71 @@ ${samples.questions.map(m =>
   const deepAnalysis = parseJSON(analysisResponse);
   console.log("Step 3 완료 ✓");
   
-  // ===== STEP 4: AI - 글쓰기만 =====
+  // ===== STEP 4: AI - 글쓰기 (더 많은 컨텍스트 제공) =====
   console.log("Step 4: 인사이트 생성 중...");
   
   const reportResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
-    max_tokens: 4000,
-    system: `당신은 Maltcha의 AI 비서 'Tea'입니다. 
-분석 결과를 따뜻하고 친근하게 전달하는 것이 당신의 역할입니다.
+    max_tokens: 3000,
+    system: `당신은 Maltcha의 AI 비서 'Tea'입니다.
+분석 결과를 바탕으로 구체적이고 실용적인 조언을 제공하세요.
 
-관계 유형에 맞는 톤을 사용하세요:
-- 연인/썸: 애정 어린 톤, 감정에 초점
-- 업무/파트너: 전문적이고 효율적인 톤
-- 가족: 따뜻하고 존중하는 톤
-- 친구: 편안하고 솔직한 톤
-
-**중요**: 구체적인 예시를 들 때는 제공된 대화 샘플에서 실제 메시지를 인용하세요.`,
+일반론이 아닌, 이 두 사람만을 위한 맞춤 조언을 해주세요.`,
     messages: [{
       role: 'user',
-      content: `다음 데이터와 분석 결과를 바탕으로, ${userName}님을 위한 4개의 인사이트를 작성해주세요.
+      content: `${userName}님을 위한 리포트를 작성해주세요.
 
-**관계 유형: ${relationshipContext}**
-
-**통계 데이터:**
+**정량 데이터:**
 ${JSON.stringify(processedData, null, 2)}
 
 **심층 분석:**
 ${JSON.stringify(deepAnalysis, null, 2)}
 
-**대화 샘플 (구체적인 예시 작성 시 참고):**
-${formattedSamples.slice(0, 2000)}
+**대표 대화 예시:**
+${samples.recent.slice(0, 30).map(m => 
+  `${m.participant}: ${m.content}`
+).join('\n')}
 
-다음 형식의 JSON 배열로 응답하세요:
+**요구사항:**
+- 최소 6개의 인사이트 작성
+- 각 인사이트는 구체적인 대화 예시 인용
+- 실행 가능한 조언 포함
+- 깊이 있고 통찰력 있는 내용
+
+다음 형식의 JSON 배열로 작성하세요:
 \`\`\`json
 [
   {
     "title": "💬 티키타카 지수: ${processedData.tikitakaScore}점",
-    "description": "구체적인 설명과 칭찬. 실제 대화 패턴을 예로 들기 (4-5문장)"
+    "description": "구체적인 설명과 칭찬. 실제 대화 패턴을 예로 들기"
   },
   {
     "title": "🎭 ${partnerName}님의 대화 스타일",
-    "description": "타입과 특징을 구체적으로 설명. 대화 샘플에서 예시 인용 (4-5문장)"
+    "description": "타입과 특징을 구체적으로 설명. 대화 샘플에서 예시 인용"
   },
   {
     "title": "📝 ${partnerName}님의 취향 노트",
-    "description": "좋아하는 것/싫어하는 것을 대화 샘플 기반으로 구체적으로 (4-5문장)"
+    "description": "좋아하는 것/싫어하는 것을 대화 샘플 기반으로 구체적으로"
   },
   {
-    "title": "💭 Tea의 조언",
-    "description": "현재 관계 상황 분석과 실용적 제안. 따뜻하고 구체적으로 (4-5문장)"
+    "title": "⏰ 대화 시간대 분석",
+    "description": "주로 언제 대화하는지, 그 시간의 의미"
+  },
+  {
+    "title": "💡 관계 개선 포인트",
+    "description": "구체적이고 실행 가능한 조언"
+  },
+  {
+    "title": "💭 Tea의 종합 조언",
+    "description": "현재 관계 상황 분석과 실용적 제안. 따뜻하고 구체적으로"
   }
 ]
-\`\`\`
-
-**규칙:**
-- 정확히 4개만 출력
-- ${relationshipContext} 관계에 맞는 톤
-- 구체적인 수치와 실제 대화 예시 포함
-- 따뜻하고 친근한 어조
-- 각 인사이트는 4-5문장으로 충분히 자세하게`
+\`\`\``
     }]
   });
   
   const insightsArray = parseJSON(reportResponse);
-  const insights = Array.isArray(insightsArray) ? insightsArray : [
+  const insights = Array.isArray(insightsArray) ? insightsArray.slice(0, 6) : [
     {
       title: `💬 티키타카 지수: ${processedData.tikitakaScore}점`,
       description: `${userName}님과 ${partnerName}님의 ${processedData.totalMessages}개 메시지를 분석했어요!`,
@@ -290,6 +291,14 @@ ${formattedSamples.slice(0, 2000)}
     {
       title: "📝 특별한 순간들",
       description: "대화 속에서 진심으로 소통했던 순간들이 있어요.",
+    },
+    {
+      title: "⏰ 대화 시간대",
+      description: "두 분의 대화 패턴에서 의미 있는 시간대를 발견했어요.",
+    },
+    {
+      title: "💡 관계 개선 포인트",
+      description: "더 나은 소통을 위한 구체적인 제안을 준비했어요.",
     },
     {
       title: "💭 Tea의 조언",
