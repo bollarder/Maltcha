@@ -7,6 +7,10 @@ import {
   type Message,
   type ProcessedData,
 } from "./data-processor";
+import {
+  getSamplesForAnalysis,
+  formatSamplesForAI,
+} from "./conversation-sampler";
 
 const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 
@@ -68,12 +72,24 @@ export async function analyzeConversation(
   console.log("\n======== 4단계 분석 파이프라인 시작 ========");
   console.log(`관계: ${relationshipContext}, 메시지: ${messages.length}개\n`);
 
+  // 대표 샘플 추출
+  const samples = getSamplesForAnalysis(messages);
+  const formattedSamples = formatSamplesForAI(samples);
+  
+  console.log(`샘플 추출 완료:`);
+  console.log(`  - 최근 대화: ${samples.recent.length}개`);
+  console.log(`  - 깊은 대화: ${samples.longestExchanges.length}개`);
+  console.log(`  - 감정적 순간: ${samples.emotional.length}개`);
+  console.log(`  - 키워드 기반: ${samples.preferences.length + samples.appointments.length + samples.questions.length}개`);
+  console.log(`  - 시간대별: ${samples.byTimeOfDay.length}개`);
+  console.log(`  - 랜덤: ${samples.random.length}개\n`);
+
   // ===== STEP 1: AI - 정보 찾기만 =====
   console.log("Step 1: AI 정보 추출 중...");
   
   const extractionResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
-    max_tokens: 3000,
+    max_tokens: 4000,
     system: `당신은 정보 추출 전문가입니다. 대화에서 다음 정보만 찾아서 나열하세요:
 1. 상대방이 명시적으로 "좋아한다"고 말한 것들
 2. 상대방이 명시적으로 "싫어한다"고 말한 것들  
@@ -83,9 +99,9 @@ export async function analyzeConversation(
 **중요: 해석하지 말고, 찾은 내용만 JSON으로 출력하세요.**`,
     messages: [{
       role: 'user',
-      content: `${userName}과 ${partnerName}의 대화 샘플 (최근 200개):
+      content: `${userName}과 ${partnerName}의 대화 샘플 (총 ${messages.length}개 중 대표 샘플):
 
-${messages.slice(-200).map(m => `${m.participant}: ${m.content}`).join('\n')}
+${formattedSamples}
 
 다음 형식의 JSON으로 응답하세요:
 \`\`\`json
@@ -176,7 +192,7 @@ ${JSON.stringify(processedData, null, 2)}
   
   const reportResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
-    max_tokens: 2500,
+    max_tokens: 4000,
     system: `당신은 Maltcha의 AI 비서 'Tea'입니다. 
 분석 결과를 따뜻하고 친근하게 전달하는 것이 당신의 역할입니다.
 
@@ -184,7 +200,9 @@ ${JSON.stringify(processedData, null, 2)}
 - 연인/썸: 애정 어린 톤, 감정에 초점
 - 업무/파트너: 전문적이고 효율적인 톤
 - 가족: 따뜻하고 존중하는 톤
-- 친구: 편안하고 솔직한 톤`,
+- 친구: 편안하고 솔직한 톤
+
+**중요**: 구체적인 예시를 들 때는 제공된 대화 샘플에서 실제 메시지를 인용하세요.`,
     messages: [{
       role: 'user',
       content: `다음 데이터와 분석 결과를 바탕으로, ${userName}님을 위한 4개의 인사이트를 작성해주세요.
@@ -197,24 +215,27 @@ ${JSON.stringify(processedData, null, 2)}
 **심층 분석:**
 ${JSON.stringify(deepAnalysis, null, 2)}
 
+**대화 샘플 (구체적인 예시 작성 시 참고):**
+${formattedSamples.slice(0, 2000)}
+
 다음 형식의 JSON 배열로 응답하세요:
 \`\`\`json
 [
   {
     "title": "💬 티키타카 지수: ${processedData.tikitakaScore}점",
-    "description": "구체적인 설명과 칭찬 (3-4문장)"
+    "description": "구체적인 설명과 칭찬. 실제 대화 패턴을 예로 들기 (4-5문장)"
   },
   {
     "title": "🎭 ${partnerName}님의 대화 스타일",
-    "description": "타입과 특징 설명 (3-4문장)"
+    "description": "타입과 특징을 구체적으로 설명. 대화 샘플에서 예시 인용 (4-5문장)"
   },
   {
     "title": "📝 ${partnerName}님의 취향 노트",
-    "description": "좋아하는 것/싫어하는 것 구체적으로 (3-4문장)"
+    "description": "좋아하는 것/싫어하는 것을 대화 샘플 기반으로 구체적으로 (4-5문장)"
   },
   {
     "title": "💭 Tea의 조언",
-    "description": "현재 상황 분석과 실용적 제안 (3-4문장)"
+    "description": "현재 관계 상황 분석과 실용적 제안. 따뜻하고 구체적으로 (4-5문장)"
   }
 ]
 \`\`\`
@@ -222,8 +243,9 @@ ${JSON.stringify(deepAnalysis, null, 2)}
 **규칙:**
 - 정확히 4개만 출력
 - ${relationshipContext} 관계에 맞는 톤
-- 구체적인 수치와 예시 포함
-- 따뜻하고 친근한 어조`
+- 구체적인 수치와 실제 대화 예시 포함
+- 따뜻하고 친근한 어조
+- 각 인사이트는 4-5문장으로 충분히 자세하게`
     }]
   });
   
