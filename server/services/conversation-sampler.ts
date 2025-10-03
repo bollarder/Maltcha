@@ -1,6 +1,7 @@
 // server/services/conversation-sampler.ts
 // AI가 분석할 대표적인 메시지 샘플을 추출하는 유틸리티
 
+import emojiRegex from "emoji-regex";
 import type { Message } from "./data-processor";
 
 export interface MessageSamples {
@@ -81,6 +82,8 @@ function getMostEmotionalMessages(messages: Message[], count: number): Message[]
     "좋아", "싫어", "미안", "고마워", "감사", "축하"
   ];
   
+  const regex = emojiRegex();
+  
   const scored = messages.map(m => {
     let score = 0;
     
@@ -89,9 +92,9 @@ function getMostEmotionalMessages(messages: Message[], count: number): Message[]
       if (m.content.includes(k)) score += 2;
     });
     
-    // 이모티콘 점수 (유니코드 서로게이트 페어로 검출)
-    const emojiCount = (m.content.match(/[\uD800-\uDFFF]/g) || []).length / 2;
-    score += emojiCount * 3;
+    // 이모티콘 점수 (emoji-regex로 정확한 검출)
+    const emojiMatches = m.content.match(regex) || [];
+    score += Math.min(emojiMatches.length * 3, 15); // 최대 15점
     
     // 느낌표/물음표 점수
     score += (m.content.match(/[!?]/g) || []).length;
