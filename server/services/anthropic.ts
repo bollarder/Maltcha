@@ -133,30 +133,58 @@ ${formattedSamples}
   console.log(`  - 티키타카 지수: ${processedData.tikitakaScore}점`);
   console.log(`  - 메시지 비율: ${userName} ${(processedData.messageRatio[userName] * 100).toFixed(0)}% / ${partnerName} ${(processedData.messageRatio[partnerName] * 100).toFixed(0)}%`);
   
-  // ===== STEP 3: AI - 심층 분석만 =====
+  // ===== STEP 3: AI - 심층 분석 (대폭 개선) =====
   console.log("Step 3: 심층 분석 중...");
   
   const analysisResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
-    max_tokens: 3000,
-    system: `당신은 관계 심리 전문가입니다. 주어진 통계 데이터만을 바탕으로 
-두 사람의 소통 스타일, 관계 역학, 숨겨진 패턴을 분석하세요.
+    max_tokens: 8000,
+    system: `당신은 10년 경력의 관계 심리 전문가입니다. 
+주어진 정량 데이터와 대화 샘플을 모두 활용하여 
+두 사람의 관계를 깊이 있게 분석하세요.
 
-**중요: 대화 원문을 보지 말고, 제공된 통계 데이터만 분석하세요.**`,
+단순한 표면적 분석이 아닌, 대화 속 숨겨진 패턴, 
+말하지 않은 감정, 관계의 변화 흐름을 포착하세요.`,
     messages: [{
       role: 'user',
-      content: `${userName}과 ${partnerName}의 대화 통계 (관계: ${relationshipContext}):
+      content: `${userName}님과 ${partnerName}님(${relationshipContext})의 대화 분석:
 
+===== 1. 정량 데이터 =====
 ${JSON.stringify(processedData, null, 2)}
 
-이 데이터를 바탕으로 다음을 분석해주세요:
-1. 소통 스타일 (경청형/주도형)
-2. 감정 표현 방식
-3. 관계 역학 (주도권, 친밀도 추이)
-4. 특이 패턴 (반복 주제, 회피 주제)
-5. 상대방 상태 및 조언
+===== 2. 최근 대화 (최근 300개) =====
+${samples.recent.map(m => 
+  `[${m.timestamp}] ${m.participant}: ${m.content}`
+).join('\n')}
 
-다음 형식의 JSON으로 응답하세요:
+===== 3. 가장 긴 대화 교환 (깊은 소통 순간) =====
+${samples.longestExchanges.map(m => 
+  `[${m.timestamp}] ${m.participant}: ${m.content}`
+).join('\n')}
+
+===== 4. 감정적 대화 =====
+${samples.emotional.map(m => 
+  `[${m.timestamp}] ${m.participant}: ${m.content}`
+).join('\n')}
+
+===== 5. 취향/선호 관련 대화 =====
+${samples.preferences.map(m => 
+  `[${m.timestamp}] ${m.participant}: ${m.content}`
+).join('\n')}
+
+===== 6. 질문-답변 패턴 =====
+${samples.questions.map(m => 
+  `[${m.timestamp}] ${m.participant}: ${m.content}`
+).join('\n')}
+
+**분석 요구사항:**
+1. 표면적 통계를 넘어, 대화 속 진짜 의미를 찾으세요
+2. 구체적인 대화 예시를 인용하며 분석하세요
+3. 시간에 따른 변화나 패턴을 포착하세요
+4. 말하지 않은 것(침묵, 회피)도 분석하세요
+5. 두 사람만의 독특한 소통 방식을 발견하세요
+
+다음 형식의 JSON으로 상세히 작성하세요:
 \`\`\`json
 {
   "communicationStyle": {
