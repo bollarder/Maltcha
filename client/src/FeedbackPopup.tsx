@@ -7,7 +7,11 @@ interface FeedbackPopupProps {
   onSubmit?: (data: any) => void;
 }
 
-export default function FeedbackPopup({ isOpen, onClose, onSubmit }: FeedbackPopupProps) {
+export default function FeedbackPopup({
+  isOpen,
+  onClose,
+  onSubmit,
+}: FeedbackPopupProps) {
   // 상태 관리
   const [satisfaction, setSatisfaction] = useState<number | null>(null);
   const [willingness, setWillingness] = useState<string | null>(null);
@@ -19,7 +23,9 @@ export default function FeedbackPopup({ isOpen, onClose, onSubmit }: FeedbackPop
   const [showFreeReasons, setShowFreeReasons] = useState(false);
 
   // 상세 답변
-  const [dissatisfactionReasons, setDissatisfactionReasons] = useState<string[]>([]);
+  const [dissatisfactionReasons, setDissatisfactionReasons] = useState<
+    string[]
+  >([]);
   const [freeReasons, setFreeReasons] = useState<string[]>([]);
   const [openFeedback, setOpenFeedback] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -45,7 +51,11 @@ export default function FeedbackPopup({ isOpen, onClose, onSubmit }: FeedbackPop
   }, [willingness]);
 
   // 체크박스 토글
-  const toggleCheckbox = (array: string[], setArray: React.Dispatch<React.SetStateAction<string[]>>, value: string) => {
+  const toggleCheckbox = (
+    array: string[],
+    setArray: React.Dispatch<React.SetStateAction<string[]>>,
+    value: string,
+  ) => {
     if (array.includes(value)) {
       setArray(array.filter((item: string) => item !== value));
     } else {
@@ -180,7 +190,7 @@ export default function FeedbackPopup({ isOpen, onClose, onSubmit }: FeedbackPop
             {[
               { value: "free", label: "무료만 사용 (0원)" },
               { value: "under_1k", label: "1,000원 미만" },
-              { value: "1-3k", label: "1,000-3,000원 ⭐ 추천" },
+              { value: "1-3k", label: "1,000-3,000원" },
               { value: "3-5k", label: "3,000-5,000원" },
               { value: "over_5k", label: "5,000원 이상" },
             ].map(({ value, label }) => (
@@ -198,7 +208,7 @@ export default function FeedbackPopup({ isOpen, onClose, onSubmit }: FeedbackPop
           </div>
 
           <p className="pricing-hint">
-            💡 정식 출시 예정가: Premium 2,900원 / Plus 4,900원
+            💡 정식 출시 예정가: Core 2,900원 / Insight 4,900원
           </p>
 
           {/* 조건부: 무료 이유 */}
