@@ -1,12 +1,9 @@
-// client/src/pages/upload.tsx
-// 기존 import는 그대로 유지하고, 아래 부분만 수정/추가
-
 import { useState, useCallback, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, AlertCircle, Check, Loader2 } from "lucide-react";
+import { Upload, FileText, AlertCircle, Check, Circle, Loader2 } from "lucide-react";
 import JSZip from "jszip";
 import { apiRequest } from "@/lib/queryClient";
 import MobileWarningDialog from "@/components/mobile-warning-dialog";
@@ -20,43 +17,16 @@ export default function UploadPage() {
   const [showMobileWarning, setShowMobileWarning] = useState(false);
   const [showMobileGuide, setShowMobileGuide] = useState(false);
 
-  // 관계 유형 상태 관리
-  const [selectedRelationships, setSelectedRelationships] = useState<string[]>([
-    "친구",
-  ]);
-  const [primaryRelationship, setPrimaryRelationship] =
-    useState<string>("친구");
+  // 관계 유형 상태 관리 (단순화)
+  const [selectedRelations, setSelectedRelations] = useState<string[]>(["친구"]);
 
-  // 관계 유형 정의 (확장 가능)
+  // 관계 유형 정의 (단순화)
   const relationshipTypes = [
-    { value: "연인", emoji: "💕", label: "연인", description: "애정 관계" },
-    { value: "썸", emoji: "💘", label: "썸", description: "연인 이전 단계" },
-    { value: "친구", emoji: "👥", label: "친구", description: "우정 관계" },
-    { value: "지인", emoji: "🤝", label: "지인", description: "아는 사이" },
-    {
-      value: "업무",
-      emoji: "💼",
-      label: "업무 동료",
-      description: "일적 관계",
-    },
-    {
-      value: "파트너",
-      emoji: "🤜🤛",
-      label: "비즈니스 파트너",
-      description: "협업 관계",
-    },
-    {
-      value: "가족",
-      emoji: "👨‍👩‍👧‍👦",
-      label: "가족",
-      description: "혈연/인척 관계",
-    },
-    {
-      value: "멘토",
-      emoji: "🎓",
-      label: "멘토-멘티",
-      description: "상하 관계",
-    },
+    { value: "친구", emoji: "👥", label: "친구" },
+    { value: "연인", emoji: "💕", label: "연인" },
+    { value: "가족", emoji: "👨‍👩‍👧‍👦", label: "가족" },
+    { value: "동료", emoji: "💼", label: "동료" },
+    { value: "기타", emoji: "🤝", label: "기타" },
   ];
 
   // 모바일 감지
@@ -68,27 +38,19 @@ export default function UploadPage() {
   }, []);
 
   // 관계 토글 함수
-  const toggleRelationship = (value: string) => {
-    if (selectedRelationships.includes(value)) {
-      // 최소 1개는 선택되어야 함
-      if (selectedRelationships.length === 1) {
+  const toggleRelation = (value: string) => {
+    if (selectedRelations.includes(value)) {
+      // 마지막 1개는 해제 불가
+      if (selectedRelations.length === 1) {
         toast({
-          title: "최소 1개 선택 필요",
-          description: "관계 유형을 최소 1개는 선택해야 합니다.",
-          variant: "destructive",
+          title: "최소 1개 관계는 선택되어야 해요",
+          duration: 3000,
         });
         return;
       }
-
-      setSelectedRelationships((prev) => prev.filter((r) => r !== value));
-
-      // 주 관계가 제거되면 첫 번째 항목을 주 관계로
-      if (primaryRelationship === value) {
-        const remaining = selectedRelationships.filter((r) => r !== value);
-        setPrimaryRelationship(remaining[0]);
-      }
+      setSelectedRelations((prev) => prev.filter((r) => r !== value));
     } else {
-      setSelectedRelationships((prev) => [...prev, value]);
+      setSelectedRelations((prev) => [...prev, value]);
     }
   };
 
@@ -249,13 +211,11 @@ export default function UploadPage() {
         });
       }
 
-      // 다중 관계 정보 포함
+      // 첫 번째 관계를 주관계로, 나머지를 부관계로 전달
       analyzeMutation.mutate({
         content,
-        primaryRelationship,
-        secondaryRelationships: selectedRelationships.filter(
-          (r) => r !== primaryRelationship,
-        ),
+        primaryRelationship: selectedRelations[0],
+        secondaryRelationships: selectedRelations.slice(1),
       });
     } catch (error: any) {
       toast({
@@ -301,57 +261,55 @@ export default function UploadPage() {
               대화 상대와의 관계를 선택해주세요
             </label>
             <p className="text-xs text-muted-foreground mb-4">
-              여러 관계가 해당된다면 모두 선택하세요. 주요 관계를 다시 클릭하면
-              ⭐로 표시됩니다.
+              여러 관계가 해당된다면 모두 선택하세요 (최소 1개 필수)
             </p>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
               {relationshipTypes.map((type) => {
-                const isSelected = selectedRelationships.includes(type.value);
-                const isPrimary = primaryRelationship === type.value;
+                const isSelected = selectedRelations.includes(type.value);
+                const isLastOne = selectedRelations.length === 1 && isSelected;
 
                 return (
                   <button
                     key={type.value}
-                    onClick={() => {
-                      if (isSelected && !isPrimary) {
-                        setPrimaryRelationship(type.value);
-                      } else if (isSelected && isPrimary) {
-                        toggleRelationship(type.value);
-                      } else {
-                        toggleRelationship(type.value);
-                        if (selectedRelationships.length === 0) {
-                          setPrimaryRelationship(type.value);
-                        }
+                    type="button"
+                    onClick={() => toggleRelation(type.value)}
+                    disabled={isLastOne}
+                    aria-pressed={isSelected}
+                    aria-label={`${type.label} ${isSelected ? "선택됨" : "선택 안 됨"}`}
+                    className={`
+                      relative p-4 rounded-xl border-2 transition-all duration-200 ease-in-out
+                      flex flex-col items-center justify-center gap-2 min-h-[120px]
+                      ${
+                        isSelected
+                          ? "border-[#A8D5BA] bg-[#E8F5E9]"
+                          : "border-[#E0E0E0] bg-[#F9F9F9] hover:border-[#A8D5BA] hover:bg-[#F0F9F4]"
                       }
-                    }}
-                    className={`relative p-4 rounded-xl border-2 transition-all ${
-                      isSelected
-                        ? "border-primary bg-primary/10 shadow-md"
-                        : "border-border hover:border-primary/50"
-                    }`}
+                      ${isLastOne ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}
+                    `}
                     data-testid={`relationship-${type.value}`}
                   >
-                    {/* 주요 관계 표시 */}
-                    {isPrimary && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-primary rounded-full flex items-center justify-center shadow-lg">
-                        <span className="text-xs">⭐</span>
-                      </div>
-                    )}
-
-                    {/* 선택 표시 */}
-                    {isSelected && !isPrimary && (
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center shadow-lg">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-
-                    <div className="text-3xl mb-2">{type.emoji}</div>
-                    <div className="text-sm font-medium text-foreground">
-                      {type.label}
+                    {/* 아이콘 */}
+                    <div className="absolute top-3 right-3">
+                      {isSelected ? (
+                        <div className="w-6 h-6 rounded-full bg-[#A8D5BA] flex items-center justify-center animate-scale-in">
+                          <Check className="w-4 h-4 text-white" />
+                        </div>
+                      ) : (
+                        <Circle className="w-6 h-6 text-[#BDC3C7]" />
+                      )}
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {type.description}
+
+                    {/* 이모지 */}
+                    <div className="text-4xl mb-1">{type.emoji}</div>
+
+                    {/* 레이블 */}
+                    <div
+                      className={`text-sm text-foreground ${
+                        isSelected ? "font-semibold" : "font-normal"
+                      }`}
+                    >
+                      {type.label}
                     </div>
                   </button>
                 );
@@ -359,21 +317,11 @@ export default function UploadPage() {
             </div>
 
             {/* 선택된 관계 요약 */}
-            {selectedRelationships.length > 0 && (
+            {selectedRelations.length > 0 && (
               <div className="mt-4 p-3 bg-accent/20 rounded-lg">
                 <p className="text-sm text-foreground">
-                  <span className="font-medium">주요 관계:</span>{" "}
-                  {primaryRelationship}
-                  {selectedRelationships.length > 1 && (
-                    <>
-                      <span className="mx-2">+</span>
-                      <span className="text-muted-foreground">
-                        {selectedRelationships
-                          .filter((r) => r !== primaryRelationship)
-                          .join(", ")}
-                      </span>
-                    </>
-                  )}
+                  <span className="font-medium">선택된 관계:</span>{" "}
+                  {selectedRelations.join(", ")}
                 </p>
               </div>
             )}
