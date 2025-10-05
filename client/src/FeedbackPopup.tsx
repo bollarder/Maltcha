@@ -89,7 +89,7 @@ export default function FeedbackPopup({ isOpen, onClose, onSubmit }: FeedbackPop
         <div className="feedback-header">
           <h2>💬 소중한 의견을 들려주세요</h2>
           <p className="subtitle">
-            3가지 질문만 답하시면
+            4가지 질문만 답하시면
             <br />
             베타 테스터 특별 혜택을 받으실 수 있어요 (30초 소요)
           </p>

@@ -98,3 +98,336 @@
 .progress-bar-fill {
   transition: width 0.3s ease-in-out;
 }
+
+/* Feedback Form Styles */
+#feedback-section {
+  scroll-margin-top: 80px;
+  position: relative;
+}
+
+.feedback-container {
+  padding: 40px 16px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  overflow-y: auto;
+}
+
+.feedback-form {
+  background: white;
+  border-radius: 16px;
+  padding: 32px 24px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.feedback-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.feedback-header h2 {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 8px;
+}
+
+.feedback-header .subtitle {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.6;
+}
+
+.question-section {
+  margin-bottom: 32px;
+}
+
+.question-label {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+.emoji-buttons {
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.emoji-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-size: 14px;
+}
+
+.emoji-btn .emoji {
+  font-size: 28px;
+}
+
+.emoji-btn .label {
+  font-size: 12px;
+  color: #666;
+  white-space: pre-line;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.emoji-btn:hover {
+  border-color: #A8D5BA;
+  transform: translateY(-2px);
+}
+
+.emoji-btn.selected {
+  border-color: #A8D5BA;
+  background: #F0F9F4;
+}
+
+.conditional-section {
+  margin-top: 20px;
+  padding: 20px;
+  background: #F9F9F9;
+  border-radius: 12px;
+  border-left: 4px solid #A8D5BA;
+  overflow: hidden;
+}
+
+.conditional-label {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.checkbox-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  margin-bottom: 8px;
+  background: white;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #333;
+  transition: background 0.2s;
+}
+
+.checkbox-item:hover {
+  background: #f5f5f5;
+}
+
+.checkbox-item input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #A8D5BA;
+}
+
+.radio-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.radio-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s;
+}
+
+.radio-item:hover {
+  border-color: #A8D5BA;
+  background: #F0F9F4;
+}
+
+.radio-item input[type="radio"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #A8D5BA;
+}
+
+.radio-item input[type="radio"]:checked + * {
+  font-weight: 600;
+}
+
+.radio-item:has(input:checked) {
+  border-color: #A8D5BA;
+  background: #F0F9F4;
+}
+
+.pricing-hint {
+  margin-top: 12px;
+  padding: 12px;
+  background: #FFF9E6;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #666;
+  text-align: center;
+}
+
+.nps-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.nps-btn {
+  padding: 16px;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  font-size: 15px;
+  text-align: left;
+  transition: all 0.2s;
+}
+
+.nps-btn:hover {
+  border-color: #A8D5BA;
+  background: #F0F9F4;
+}
+
+.nps-btn.selected {
+  border-color: #A8D5BA;
+  background: #F0F9F4;
+  font-weight: 600;
+}
+
+.feedback-textarea {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #e5e5e5;
+  border-radius: 12px;
+  font-size: 16px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 80px;
+  transition: border-color 0.2s;
+}
+
+.feedback-textarea:focus {
+  outline: none;
+  border-color: #A8D5BA;
+}
+
+.earlybird-section {
+  margin-bottom: 24px;
+}
+
+.earlybird-box {
+  padding: 24px;
+  background: linear-gradient(135deg, #F0F9F4 0%, #E8F5E9 100%);
+  border-radius: 16px;
+  border: 2px solid #A8D5BA;
+  text-align: center;
+}
+
+.earlybird-box h3 {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1a1a1a;
+  margin-bottom: 12px;
+}
+
+.earlybird-box p {
+  font-size: 15px;
+  color: #333;
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+
+.earlybird-box strong {
+  color: #2E7D32;
+  font-size: 18px;
+}
+
+.email-input {
+  width: 100%;
+  padding: 16px;
+  border: 2px solid #A8D5BA;
+  border-radius: 12px;
+  font-size: 16px;
+  text-align: center;
+}
+
+.email-input:focus {
+  outline: none;
+  border-color: #2E7D32;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 18px;
+  background: #A8D5BA;
+  color: #1a1a1a;
+  font-size: 18px;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.submit-btn:hover:not(:disabled) {
+  background: #2E7D32;
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+
+.submit-btn:disabled {
+  background: #e5e5e5;
+  color: #999;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .emoji-buttons {
+    gap: 6px;
+  }
+  
+  .emoji-btn {
+    padding: 12px 4px;
+  }
+  
+  .emoji-btn .emoji {
+    font-size: 24px;
+  }
+  
+  .emoji-btn .label {
+    font-size: 11px;
+  }
+}
