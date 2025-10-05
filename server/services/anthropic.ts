@@ -12,6 +12,15 @@ import {
   formatSamplesForAI,
 } from "./conversation-sampler";
 
+// Multi-turn 분석 함수 (필요시 구현)
+let analyzeConversationMultiTurnSafe: any = null;
+try {
+  const multiTurnModule = require("./anthropic-multiturn");
+  analyzeConversationMultiTurnSafe = multiTurnModule.analyzeConversationMultiTurnSafe;
+} catch (error) {
+  // anthropic-multiturn.ts 파일이 없으면 무시
+}
+
 const DEFAULT_MODEL_STR = "claude-sonnet-4-20250514";
 
 const anthropic = new Anthropic({
@@ -57,6 +66,70 @@ export async function analyzeConversation(
   stats: BasicStats,
   primaryRelationship: string = "친구",
   secondaryRelationships: string[] = [],
+  options: {
+    useMultiTurn?: boolean;
+    fallbackOnError?: boolean;
+  } = {}
+): Promise<ConversationAnalysis> {
+  
+  const { 
+    useMultiTurn = false, 
+    fallbackOnError = true 
+  } = options;
+
+  // Multi-turn 사용 (새 방식)
+  if (useMultiTurn) {
+    if (!analyzeConversationMultiTurnSafe) {
+      console.warn("⚠️ Multi-turn 모듈을 찾을 수 없습니다. 기존 4단계 방식으로 진행합니다.");
+      return await analyzeConversation4Stage(
+        messages,
+        stats,
+        primaryRelationship,
+        secondaryRelationships
+      );
+    }
+    
+    try {
+      console.log("🔄 Multi-turn 분석 시작");
+      return await analyzeConversationMultiTurnSafe(
+        messages,
+        stats,
+        primaryRelationship,
+        secondaryRelationships
+      );
+    } catch (error) {
+      console.error("Multi-turn 분석 실패:", error);
+      
+      // Fallback: 기존 방식으로 재시도
+      if (fallbackOnError) {
+        console.log("⚠️ 기존 4단계 방식으로 Fallback");
+        return await analyzeConversation4Stage(
+          messages,
+          stats,
+          primaryRelationship,
+          secondaryRelationships
+        );
+      }
+      
+      throw error;
+    }
+  }
+
+  // 기존 4단계 방식
+  return await analyzeConversation4Stage(
+    messages,
+    stats,
+    primaryRelationship,
+    secondaryRelationships
+  );
+}
+
+// 기존 4단계 로직을 별도 함수로 분리
+async function analyzeConversation4Stage(
+  messages: Message[],
+  stats: BasicStats,
+  primaryRelationship: string,
+  secondaryRelationships: string[]
 ): Promise<ConversationAnalysis> {
   const participants = Array.from(new Set(messages.map((m) => m.participant)));
   const userName = participants[0] || "사용자";
