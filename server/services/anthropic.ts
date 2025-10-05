@@ -39,10 +39,9 @@ export interface ConversationAnalysis {
 
 // JSON 파싱 헬퍼 함수
 function parseJSON(response: any): any {
-  const text = response.content[0].type === 'text' 
-    ? response.content[0].text 
-    : '{}';
-    
+  const text =
+    response.content[0].type === "text" ? response.content[0].text : "{}";
+
   try {
     const jsonMatch = text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);
     return JSON.parse(jsonMatch ? jsonMatch[0] : text);
@@ -57,13 +56,12 @@ export async function analyzeConversation(
   messages: Message[],
   stats: BasicStats,
   primaryRelationship: string = "친구",
-  secondaryRelationships: string[] = []
+  secondaryRelationships: string[] = [],
 ): Promise<ConversationAnalysis> {
-  
   const participants = Array.from(new Set(messages.map((m) => m.participant)));
   const userName = participants[0] || "사용자";
   const partnerName = participants[1] || "상대방";
-  
+
   const relationshipContext =
     secondaryRelationships.length > 0
       ? `${primaryRelationship} (주요) + ${secondaryRelationships.join(", ")} (부가적)`
@@ -75,18 +73,20 @@ export async function analyzeConversation(
   // 대표 샘플 추출
   const samples = getSamplesForAnalysis(messages);
   const formattedSamples = formatSamplesForAI(samples);
-  
+
   console.log(`샘플 추출 완료:`);
   console.log(`  - 최근 대화: ${samples.recent.length}개`);
   console.log(`  - 깊은 대화: ${samples.longestExchanges.length}개`);
   console.log(`  - 감정적 순간: ${samples.emotional.length}개`);
-  console.log(`  - 키워드 기반: ${samples.preferences.length + samples.appointments.length + samples.questions.length}개`);
+  console.log(
+    `  - 키워드 기반: ${samples.preferences.length + samples.appointments.length + samples.questions.length}개`,
+  );
   console.log(`  - 시간대별: ${samples.byTimeOfDay.length}개`);
   console.log(`  - 랜덤: ${samples.random.length}개\n`);
 
   // ===== STEP 1: AI - 정보 찾기만 =====
   console.log("Step 1: AI 정보 추출 중...");
-  
+
   const extractionResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
     max_tokens: 4000,
@@ -97,9 +97,10 @@ export async function analyzeConversation(
 4. "사랑해", "보고싶어", "고마워" 등 애정 표현 문장들
 
 **중요: 해석하지 말고, 찾은 내용만 JSON으로 출력하세요.**`,
-    messages: [{
-      role: 'user',
-      content: `${userName}과 ${partnerName}의 대화 샘플 (총 ${messages.length}개 중 대표 샘플):
+    messages: [
+      {
+        role: "user",
+        content: `${userName}과 ${partnerName}의 대화 샘플 (총 ${messages.length}개 중 대표 샘플):
 
 ${formattedSamples}
 
@@ -117,25 +118,28 @@ ${formattedSamples}
     {"word": "자주 나온 단어", "count": 추정 빈도}
   ]
 }
-\`\`\``
-    }]
+\`\`\``,
+      },
+    ],
   });
-  
+
   const rawExtraction = parseJSON(extractionResponse);
   console.log("Step 1 완료 ✓");
-  
+
   // ===== STEP 2: 코드 - 계산 & 가공 =====
   console.log("Step 2: 데이터 처리 및 계산 중...");
-  
+
   const processedData = processConversationData(messages, rawExtraction);
-  
+
   console.log("Step 2 완료 ✓");
   console.log(`  - 티키타카 지수: ${processedData.tikitakaScore}점`);
-  console.log(`  - 메시지 비율: ${userName} ${(processedData.messageRatio[userName] * 100).toFixed(0)}% / ${partnerName} ${(processedData.messageRatio[partnerName] * 100).toFixed(0)}%`);
-  
+  console.log(
+    `  - 메시지 비율: ${userName} ${(processedData.messageRatio[userName] * 100).toFixed(0)}% / ${partnerName} ${(processedData.messageRatio[partnerName] * 100).toFixed(0)}%`,
+  );
+
   // ===== STEP 3: AI - 심층 분석 (대폭 개선) =====
   console.log("Step 3: 심층 분석 중...");
-  
+
   const analysisResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
     max_tokens: 8000,
@@ -145,37 +149,38 @@ ${formattedSamples}
 
 단순한 표면적 분석이 아닌, 대화 속 숨겨진 패턴, 
 말하지 않은 감정, 관계의 변화 흐름을 포착하세요.`,
-    messages: [{
-      role: 'user',
-      content: `${userName}님과 ${partnerName}님(${relationshipContext})의 대화 분석:
+    messages: [
+      {
+        role: "user",
+        content: `${userName}님과 ${partnerName}님(${relationshipContext})의 대화 분석:
 
 ===== 1. 정량 데이터 =====
 ${JSON.stringify(processedData, null, 2)}
 
 ===== 2. 최근 대화 (최근 300개) =====
-${samples.recent.map(m => 
-  `[${m.timestamp}] ${m.participant}: ${m.content}`
-).join('\n')}
+${samples.recent
+  .map((m) => `[${m.timestamp}] ${m.participant}: ${m.content}`)
+  .join("\n")}
 
 ===== 3. 가장 긴 대화 교환 (깊은 소통 순간) =====
-${samples.longestExchanges.map(m => 
-  `[${m.timestamp}] ${m.participant}: ${m.content}`
-).join('\n')}
+${samples.longestExchanges
+  .map((m) => `[${m.timestamp}] ${m.participant}: ${m.content}`)
+  .join("\n")}
 
 ===== 4. 감정적 대화 =====
-${samples.emotional.map(m => 
-  `[${m.timestamp}] ${m.participant}: ${m.content}`
-).join('\n')}
+${samples.emotional
+  .map((m) => `[${m.timestamp}] ${m.participant}: ${m.content}`)
+  .join("\n")}
 
 ===== 5. 취향/선호 관련 대화 =====
-${samples.preferences.map(m => 
-  `[${m.timestamp}] ${m.participant}: ${m.content}`
-).join('\n')}
+${samples.preferences
+  .map((m) => `[${m.timestamp}] ${m.participant}: ${m.content}`)
+  .join("\n")}
 
 ===== 6. 질문-답변 패턴 =====
-${samples.questions.map(m => 
-  `[${m.timestamp}] ${m.participant}: ${m.content}`
-).join('\n')}
+${samples.questions
+  .map((m) => `[${m.timestamp}] ${m.participant}: ${m.content}`)
+  .join("\n")}
 
 **분석 요구사항:**
 1. 표면적 통계를 넘어, 대화 속 진짜 의미를 찾으세요
@@ -208,16 +213,17 @@ ${samples.questions.map(m =>
     "suggestion": "조언"
   }
 }
-\`\`\``
-    }]
+\`\`\``,
+      },
+    ],
   });
-  
+
   const deepAnalysis = parseJSON(analysisResponse);
   console.log("Step 3 완료 ✓");
-  
+
   // ===== STEP 4: AI - 글쓰기 (더 많은 컨텍스트 제공) =====
   console.log("Step 4: 인사이트 생성 중...");
-  
+
   const reportResponse = await anthropic.messages.create({
     model: DEFAULT_MODEL_STR,
     max_tokens: 3000,
@@ -225,9 +231,10 @@ ${samples.questions.map(m =>
 분석 결과를 바탕으로 구체적이고 실용적인 조언을 제공하세요.
 
 일반론이 아닌, 이 두 사람만을 위한 맞춤 조언을 해주세요.`,
-    messages: [{
-      role: 'user',
-      content: `${userName}님을 위한 리포트를 작성해주세요.
+    messages: [
+      {
+        role: "user",
+        content: `${userName}님을 위한 리포트를 작성해주세요.
 
 **정량 데이터:**
 ${JSON.stringify(processedData, null, 2)}
@@ -236,9 +243,10 @@ ${JSON.stringify(processedData, null, 2)}
 ${JSON.stringify(deepAnalysis, null, 2)}
 
 **대표 대화 예시:**
-${samples.recent.slice(0, 30).map(m => 
-  `${m.participant}: ${m.content}`
-).join('\n')}
+${samples.recent
+  .slice(0, 30)
+  .map((m) => `${m.participant}: ${m.content}`)
+  .join("\n")}
 
 **요구사항:**
 - 최소 6개의 인사이트 작성
@@ -274,48 +282,51 @@ ${samples.recent.slice(0, 30).map(m =>
     "description": "현재 관계 상황 분석과 실용적 제안. 따뜻하고 구체적으로"
   }
 ]
-\`\`\``
-    }]
+\`\`\``,
+      },
+    ],
   });
-  
+
   const insightsArray = parseJSON(reportResponse);
-  const insights = Array.isArray(insightsArray) ? insightsArray.slice(0, 6) : [
-    {
-      title: `💬 티키타카 지수: ${processedData.tikitakaScore}점`,
-      description: `${userName}님과 ${partnerName}님의 ${processedData.totalMessages}개 메시지를 분석했어요!`,
-    },
-    {
-      title: "🎭 대화 스타일",
-      description: "서로 다른 스타일이지만 잘 어울려요.",
-    },
-    {
-      title: "📝 특별한 순간들",
-      description: "대화 속에서 진심으로 소통했던 순간들이 있어요.",
-    },
-    {
-      title: "⏰ 대화 시간대",
-      description: "두 분의 대화 패턴에서 의미 있는 시간대를 발견했어요.",
-    },
-    {
-      title: "💡 관계 개선 포인트",
-      description: "더 나은 소통을 위한 구체적인 제안을 준비했어요.",
-    },
-    {
-      title: "💭 Tea의 조언",
-      description: `${relationshipContext} 관계에서 지금처럼 계속 소통하면 더 깊은 관계가 될 거예요.`,
-    },
-  ];
-  
+  const insights = Array.isArray(insightsArray)
+    ? insightsArray.slice(0, 6)
+    : [
+        {
+          title: `💬 티키타카 지수: ${processedData.tikitakaScore}점`,
+          description: `${userName}님과 ${partnerName}님의 ${processedData.totalMessages}개 메시지를 분석했어요!`,
+        },
+        {
+          title: "🎭 대화 스타일",
+          description: "서로 다른 스타일이지만 잘 어울려요.",
+        },
+        {
+          title: "📝 특별한 순간들",
+          description: "대화 속에서 진심으로 소통했던 순간들이 있어요.",
+        },
+        {
+          title: "⏰ 대화 시간대",
+          description: "두 분의 대화 패턴에서 의미 있는 시간대를 발견했어요.",
+        },
+        {
+          title: "💡 관계 개선 포인트",
+          description: "더 나은 소통을 위한 구체적인 제안을 준비했어요.",
+        },
+        {
+          title: "💭 Tea의 조언",
+          description: `${relationshipContext} 관계에서 지금처럼 계속 소통하면 더 깊은 관계가 될 거예요.`,
+        },
+      ];
+
   console.log("Step 4 완료 ✓");
   console.log("======== 분석 완료 ========\n");
-  
+
   // 최종 결과 조합
   const sentimentScore = Math.round(
     (processedData.sentimentRatio.positive * 100 +
       processedData.sentimentRatio.neutral * 50) /
       (processedData.sentimentRatio.positive +
         processedData.sentimentRatio.neutral +
-        processedData.sentimentRatio.negative)
+        processedData.sentimentRatio.negative),
   );
 
   const sentimentDistribution = [
@@ -336,7 +347,7 @@ ${samples.recent.slice(0, 30).map(m =>
   return {
     sentimentScore,
     sentimentDistribution,
-    insights: insights.slice(0, 4),
+    insights: insights.slice(0, 6),
     processedData,
     deepAnalysis,
   };
