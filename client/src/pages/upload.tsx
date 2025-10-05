@@ -20,13 +20,16 @@ export default function UploadPage() {
   // 관계 유형 상태 관리 (단순화)
   const [selectedRelations, setSelectedRelations] = useState<string[]>(["친구"]);
 
-  // 관계 유형 정의 (단순화)
+  // 관계 유형 정의
   const relationshipTypes = [
     { value: "친구", emoji: "👥", label: "친구" },
     { value: "연인", emoji: "💕", label: "연인" },
     { value: "가족", emoji: "👨‍👩‍👧‍👦", label: "가족" },
     { value: "동료", emoji: "💼", label: "동료" },
-    { value: "기타", emoji: "🤝", label: "기타" },
+    { value: "선후배", emoji: "🎓", label: "선후배" },
+    { value: "지인", emoji: "🤝", label: "지인" },
+    { value: "온라인 친구", emoji: "💻", label: "온라인 친구" },
+    { value: "기타", emoji: "⭐", label: "기타" },
   ];
 
   // 모바일 감지
@@ -264,7 +267,7 @@ export default function UploadPage() {
               여러 관계가 해당된다면 모두 선택하세요 (최소 1개 필수)
             </p>
 
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {relationshipTypes.map((type) => {
                 const isSelected = selectedRelations.includes(type.value);
                 const isLastOne = selectedRelations.length === 1 && isSelected;
