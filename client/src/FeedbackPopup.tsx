@@ -290,8 +290,8 @@ export default function FeedbackPopup({
           <div className="radio-group">
             {[
               "친구 추천",
-              "SNS (인스타/페북/X)",
-              "커뮤니티 (에브리타임/오픈챗)",
+              "SNS (인스타/스레드)",
+              "커뮤니티",
               "검색",
               "기타",
             ].map((ch) => (
@@ -326,11 +326,11 @@ export default function FeedbackPopup({
           <div className="earlybird-box">
             <h3>🎁 베타 테스터 특전</h3>
             <p>
-              정식 출시 시 Plus(4,900원)를
+              정식 출시 시 Insight(4,900원)를
               <br />
               <strong>990원/월에 평생 이용!</strong>
               <br />
-              (80% 할인, 선착순 100명)
+              (80% 할인, 선착순 70명)
             </p>
             <input
               type="email"
