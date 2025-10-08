@@ -16,7 +16,8 @@ import {
 let analyzeConversationMultiTurnSafe: any = null;
 try {
   const multiTurnModule = require("./anthropic-multiturn");
-  analyzeConversationMultiTurnSafe = multiTurnModule.analyzeConversationMultiTurnSafe;
+  analyzeConversationMultiTurnSafe =
+    multiTurnModule.analyzeConversationMultiTurnSafe;
 } catch (error) {
   // anthropic-multiturn.ts 파일이 없으면 무시
 }
@@ -69,37 +70,35 @@ export async function analyzeConversation(
   options: {
     useMultiTurn?: boolean;
     fallbackOnError?: boolean;
-  } = {}
+  } = {},
 ): Promise<ConversationAnalysis> {
-  
-  const { 
-    useMultiTurn = false, 
-    fallbackOnError = true 
-  } = options;
+  const { useMultiTurn = true, fallbackOnError = true } = options;
 
   // Multi-turn 사용 (새 방식)
   if (useMultiTurn) {
     if (!analyzeConversationMultiTurnSafe) {
-      console.warn("⚠️ Multi-turn 모듈을 찾을 수 없습니다. 기존 4단계 방식으로 진행합니다.");
+      console.warn(
+        "⚠️ Multi-turn 모듈을 찾을 수 없습니다. 기존 4단계 방식으로 진행합니다.",
+      );
       return await analyzeConversation4Stage(
         messages,
         stats,
         primaryRelationship,
-        secondaryRelationships
+        secondaryRelationships,
       );
     }
-    
+
     try {
       console.log("🔄 Multi-turn 분석 시작");
       return await analyzeConversationMultiTurnSafe(
         messages,
         stats,
         primaryRelationship,
-        secondaryRelationships
+        secondaryRelationships,
       );
     } catch (error) {
       console.error("Multi-turn 분석 실패:", error);
-      
+
       // Fallback: 기존 방식으로 재시도
       if (fallbackOnError) {
         console.log("⚠️ 기존 4단계 방식으로 Fallback");
@@ -107,10 +106,10 @@ export async function analyzeConversation(
           messages,
           stats,
           primaryRelationship,
-          secondaryRelationships
+          secondaryRelationships,
         );
       }
-      
+
       throw error;
     }
   }
@@ -120,7 +119,7 @@ export async function analyzeConversation(
     messages,
     stats,
     primaryRelationship,
-    secondaryRelationships
+    secondaryRelationships,
   );
 }
 
@@ -129,7 +128,7 @@ async function analyzeConversation4Stage(
   messages: Message[],
   stats: BasicStats,
   primaryRelationship: string,
-  secondaryRelationships: string[]
+  secondaryRelationships: string[],
 ): Promise<ConversationAnalysis> {
   const participants = Array.from(new Set(messages.map((m) => m.participant)));
   const userName = participants[0] || "사용자";

@@ -91,7 +91,8 @@ async function processAnalysis(
     parsed.messages, 
     stats,
     primaryRelationship,
-    secondaryRelationships
+    secondaryRelationships,
+    { useMultiTurn: true }
   );
 
   await storage.updateAnalysis(analysisId, {
