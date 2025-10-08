@@ -315,13 +315,18 @@ export default function UploadPage() {
       />
 
       <div className="max-w-3xl mx-auto">
-        {/* Header */}
+        {/* Header - 말차 브랜드 포인트 */}
         <div className="text-center mb-12 fade-in-up">
-          <h1 className="text-4xl font-bold text-foreground mb-4">
-            대화 파일 업로드
+          <h1 className="text-4xl font-bold mb-4">
+            <span className="text-foreground">대화 파일 </span>
+            <span className="bg-gradient-to-r from-[#5a9d70] to-[#4a8d60] dark:from-[#94c9a9] dark:to-[#a8d5ba] bg-clip-text text-transparent">
+              업로드
+            </span>
           </h1>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground flex items-center justify-center gap-2">
+            <span className="inline-block w-2 h-2 bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] rounded-full"></span>
             Maltcha AI를 통해 대화를 깊게 분석해보세요
+            <span className="inline-block w-2 h-2 bg-gradient-to-r from-[#8bc9a3] to-[#a8d5ba] rounded-full"></span>
           </p>
         </div>
 
@@ -329,7 +334,7 @@ export default function UploadPage() {
         {!file && (
           <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
             <label className="block text-sm font-medium text-foreground mb-2">
-              대화 상대와의 관계를 선택해주세요 <span className="text-red-500">*</span>
+              대화 상대와의 관계를 선택해주세요 <span className="text-[#8bc9a3] dark:text-[#a8d5ba]">*</span>
             </label>
             <p className="text-xs text-muted-foreground mb-4">
               대분류를 선택하고, 구체적인 관계를 고르세요
@@ -409,8 +414,8 @@ export default function UploadPage() {
             {selectedRelationships.length > 0 && (
               <div className="mt-6 p-5 bg-gradient-to-br from-[#a8d5ba] to-[#94c9a9] dark:from-[#2d5a3d] dark:to-[#234a32] rounded-xl shadow-md border-2 border-[#8bc9a3] dark:border-[#3d6a4d] animate-in fade-in slide-in-from-bottom-2 duration-300">
                 <div className="flex items-center gap-2 mb-3">
-                  <Check className="w-5 h-5 text-white dark:text-[#a8d5ba]" />
-                  <p className="text-base font-bold text-white dark:text-[#a8d5ba]">
+                  <Check className="w-5 h-5 text-[#1a3a2a] dark:text-white" />
+                  <p className="text-base font-bold text-[#1a3a2a] dark:text-white">
                     선택된 관계 ({selectedRelationships.length}개)
                   </p>
                 </div>
@@ -439,7 +444,7 @@ export default function UploadPage() {
         {/* Analysis Purpose Input - 항상 표시 */}
         <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
           <label htmlFor="purpose-input" className="block text-sm font-medium text-foreground mb-2">
-            대화에서 무엇이 알고 싶나요? <span className="text-red-500">*</span>
+            대화에서 무엇이 알고 싶나요? <span className="text-[#8bc9a3] dark:text-[#a8d5ba]">*</span>
           </label>
           <p className="text-xs text-muted-foreground mb-4">
             분석 목적을 자유롭게 작성해주세요 (필수)
@@ -508,7 +513,10 @@ export default function UploadPage() {
               </div>
             ) : (
               <div className="space-y-4">
-                <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
+                <div className="relative">
+                  <Upload className="w-16 h-16 mx-auto text-[#a8d5ba] dark:text-[#94c9a9]" />
+                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-20 h-20 bg-gradient-to-r from-[#a8d5ba]/20 to-[#8bc9a3]/20 blur-xl rounded-full"></div>
+                </div>
                 <div>
                   <p className="text-lg font-semibold text-foreground">
                     파일을 드래그하거나 클릭하여 업로드
@@ -534,12 +542,12 @@ export default function UploadPage() {
               <Button
                 onClick={handleAnalyze}
                 disabled={analyzeMutation.isPending}
-                className="w-full bg-primary text-primary-foreground hover:bg-secondary text-lg py-6"
+                className="w-full bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] dark:from-[#2d5a3d] dark:to-[#234a32] hover:from-[#94c9a9] hover:to-[#7ab899] dark:hover:from-[#3d6a4d] dark:hover:to-[#2d5a3d] text-[#1a3a2a] dark:text-white text-lg py-6 shadow-lg hover:shadow-xl transition-all duration-200 font-semibold"
                 data-testid="button-analyze"
               >
                 {analyzeMutation.isPending ? (
                   <>
-                    <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
+                    <div className="w-5 h-5 border-2 border-[#1a3a2a] dark:border-white border-t-transparent rounded-full animate-spin mr-2" />
                     분석 시작 중...
                   </>
                 ) : (

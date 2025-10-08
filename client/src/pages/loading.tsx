@@ -97,13 +97,21 @@ export default function Loading() {
         {/* Loading Animation */}
         <div className="text-center mb-12 fade-in-up">
           <div className="w-20 h-20 mx-auto mb-6 relative">
-            <div className="absolute inset-0 bg-primary rounded-full opacity-20 animate-ping"></div>
-            <div className="relative w-20 h-20 bg-primary rounded-full flex items-center justify-center">
-              <RefreshCw className="w-10 h-10 text-primary-foreground animate-spin" />
+            <div className="absolute inset-0 bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] dark:from-[#2d5a3d] dark:to-[#234a32] rounded-full opacity-20 animate-ping"></div>
+            <div className="relative w-20 h-20 bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] dark:from-[#2d5a3d] dark:to-[#234a32] rounded-full flex items-center justify-center shadow-lg">
+              <RefreshCw className="w-10 h-10 text-[#1a3a2a] dark:text-white animate-spin" />
             </div>
           </div>
-          <h2 className="text-2xl md:text-3xl font-bold text-foreground mb-2">대화 속 마음을 읽고 있어요</h2>
-          <p className="text-muted-foreground">차 한 잔 우려지는 시간만큼만 기다려주세요</p>
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">
+            <span className="text-foreground">대화 속 </span>
+            <span className="bg-gradient-to-r from-[#5a9d70] to-[#4a8d60] dark:from-[#94c9a9] dark:to-[#a8d5ba] bg-clip-text text-transparent">마음</span>
+            <span className="text-foreground">을 읽고 있어요</span>
+          </h2>
+          <p className="text-muted-foreground flex items-center justify-center gap-2">
+            <span className="inline-block w-1.5 h-1.5 bg-[#a8d5ba] rounded-full"></span>
+            차 한 잔 우려지는 시간만큼만 기다려주세요
+            <span className="inline-block w-1.5 h-1.5 bg-[#8bc9a3] rounded-full"></span>
+          </p>
         </div>
 
         {/* Progress Bar */}
@@ -115,7 +123,7 @@ export default function Loading() {
             </div>
             <div className="w-full bg-muted dark:bg-muted rounded-full h-3 overflow-hidden">
               <div 
-                className="progress-bar-fill bg-primary h-full rounded-full transition-all duration-300" 
+                className="progress-bar-fill bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] dark:from-[#2d5a3d] dark:to-[#234a32] h-full rounded-full transition-all duration-300 shadow-sm" 
                 style={{ width: `${progress.percentage}%` }}
               ></div>
             </div>
@@ -127,14 +135,14 @@ export default function Loading() {
               <div key={index} className="flex items-center space-x-3">
                 <div className={`w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 ${
                   stage.completed 
-                    ? 'bg-primary' 
+                    ? 'bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] dark:from-[#2d5a3d] dark:to-[#234a32]' 
                     : 'border-2 border-border'
                 }`}>
                   {stage.completed && (
-                    <Check className="w-4 h-4 text-primary-foreground" />
+                    <Check className="w-4 h-4 text-[#1a3a2a] dark:text-white" />
                   )}
                 </div>
-                <span className={stage.completed ? 'text-foreground' : 'text-muted-foreground'}>
+                <span className={stage.completed ? 'text-foreground font-medium' : 'text-muted-foreground'}>
                   {stage.name}
                 </span>
               </div>
@@ -145,8 +153,8 @@ export default function Loading() {
         {/* Tips Card */}
         <div className="bg-accent/50 dark:bg-accent/50 rounded-xl p-6 fade-in-up tip-rotate">
           <div className="flex items-start space-x-3">
-            <div className="w-10 h-10 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-              <svg className="w-5 h-5 text-primary-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-10 h-10 bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] dark:from-[#2d5a3d] dark:to-[#234a32] rounded-lg flex items-center justify-center flex-shrink-0 shadow-md">
+              <svg className="w-5 h-5 text-[#1a3a2a] dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
               </svg>
             </div>

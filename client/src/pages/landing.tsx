@@ -83,7 +83,7 @@ export default function Landing() {
             <h1 className="text-4xl md:text-6xl lg:text-7xl font-bold text-foreground mb-6 leading-tight">
               소중한 사람과의 대화를
               <br />
-              <span className="text-primary">깊이 있게 분석</span>하세요
+              <span className="bg-gradient-to-r from-[#5a9d70] to-[#4a8d60] dark:from-[#94c9a9] dark:to-[#a8d5ba] bg-clip-text text-transparent">깊이 있게 분석</span>하세요
             </h1>
 
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-3xl mx-auto">
@@ -96,7 +96,7 @@ export default function Landing() {
               <Link href="/upload">
                 <Button
                   size="lg"
-                  className="bg-primary text-primary-foreground hover:bg-secondary transform hover:scale-105 transition-all shadow-lg hover:shadow-xl"
+                  className="bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] dark:from-[#2d5a3d] dark:to-[#234a32] hover:from-[#94c9a9] hover:to-[#7ab899] dark:hover:from-[#3d6a4d] dark:hover:to-[#2d5a3d] text-[#1a3a2a] dark:text-white transform hover:scale-105 transition-all shadow-lg hover:shadow-xl font-semibold"
                   data-testid="button-start"
                 >
                   무료로 시작하기
