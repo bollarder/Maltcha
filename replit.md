@@ -19,11 +19,12 @@ Preferred communication style: Simple, everyday language.
   - **Token Optimization**: Reduces Claude input tokens significantly, preventing 30k tokens/minute rate limit errors
   - **Fallback Logic**: Automatically falls back to Claude-only mode if GEMINI_API_KEY is missing or Gemini pipeline fails
 - **Rate Limit Prevention (429 Error Fix)**:
-  - **60-second delay**: Added between Gemini and Claude to distribute tokens across minutes (0-60s: Gemini, 60-120s: Claude)
-  - **Token budget system**: Enforces 25,000 token limit for Claude input
-    - MEDIUM messages: Selected with real-time token calculation
-    - Final verification: Iterative trimming (MEDIUM → HIGH) until budget met
-    - Absolute guarantee: Claude input ≤ 25K tokens, total per-minute ≤ 30K
+  - **Overhead-based Batching**: Pre-calculates fixed overhead (system prompt + Gemini summary + context), then splits HIGH messages using remaining budget
+  - **Mathematical Guarantee**: `availableBudgetPerBatch = 25K - overhead` ensures each batch ≤ 25K tokens from the start
+  - **Zero Message Loss**: All HIGH messages preserved across batches (no trimming needed)
+  - **Smart MEDIUM Selection**: First batch only, fills remaining budget after HIGH messages: `mediumBudget = 25K - overhead - firstBatchHigh`
+  - **Progress Tracking**: Real-time display (e.g., "배치 2/5 분석 중... 약 3분 남음")
+  - **60s Intervals**: Rate limit compliance guaranteed (Gemini 0-60s, Claude batches 60s+ apart)
 - **Error Handling**: Robust validation and error recovery
   - Validates Gemini responses (high_indices, medium_sample arrays)
   - Filters invalid message indices before Claude processing

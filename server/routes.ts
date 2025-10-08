@@ -276,15 +276,15 @@ async function processAnalysis(
     console.log(`  - HIGH 인덱스: ${geminiSummary.high_indices.length}개`);
     console.log(`  - MEDIUM 샘플: ${geminiSummary.medium_sample.length}개 (검증 후)`);
     
-    // Rate Limit 방지: Gemini 요약 후 60초 대기 (Gemini + Claude 합산 토큰 분산)
-    console.log(`⏳ Rate limit 방지를 위해 60초 대기 중... (심층 분석 준비)`);
+    // Rate Limit 방지: Gemini 요약 후 60초 대기
+    console.log(`⏳ Gemini 분석 완료. Claude 심층 분석 준비를 위해 60초 대기 중...`);
     await new Promise(resolve => setTimeout(resolve, 60000));
 
-    // 5. HIGH 원문 추출 (핵심 순간은 전부 가져오기)
-    console.log(`5단계: HIGH 원문 추출 중...`);
+    // 5. HIGH 원문 추출 및 배치 분할 (모두 분석하기)
+    console.log(`5단계: HIGH 원문 추출 및 배치 분할 중...`);
     
-    // HIGH 메시지: 제한 없음 (관계의 핵심 순간은 절대 놓치면 안 됨)
-    const highMessages = geminiSummary.high_indices
+    // HIGH 메시지 전체 추출
+    const allHighMessages = geminiSummary.high_indices
       .filter(index => index >= 0 && index < parsed.messages.length)
       .map(index => ({
         index,
@@ -293,73 +293,114 @@ async function processAnalysis(
         message: parsed.messages[index].content,
       }));
     
-    // MEDIUM 샘플: 토큰 예산 고려 (보조 맥락, 샘플로 충분)
-    // HIGH 메시지 토큰 추정
-    const highTokens = Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
-    const TOKEN_BUDGET = 25000; // 안전 마진 포함 (Claude 입력 전체)
-    const OVERHEAD_TOKENS = 3000; // Gemini summary + context
-    const remainingTokens = TOKEN_BUDGET - highTokens - OVERHEAD_TOKENS;
+    console.log(`✓ HIGH 메시지 ${allHighMessages.length}개 추출 완료`);
     
-    // 토큰 예산 초과 경고
-    if (highTokens > TOKEN_BUDGET - OVERHEAD_TOKENS) {
-      console.warn(`⚠️  HIGH 메시지 토큰(${highTokens})이 예산(${TOKEN_BUDGET - OVERHEAD_TOKENS})을 초과했습니다.`);
-      console.warn(`⚠️  HIGH 메시지를 상위 ${Math.floor((TOKEN_BUDGET - OVERHEAD_TOKENS) / (highTokens / highMessages.length))}개로 제한합니다.`);
+    // Overhead 계산 (모든 배치 공통)
+    const systemPromptTokens = Math.ceil(500 / 2.5);
+    const geminiSummaryTokens = Math.ceil(JSON.stringify(geminiSummary).length / 2.5);
+    const contextTokens = Math.ceil(500 / 2.5);
+    const overheadTokens = systemPromptTokens + geminiSummaryTokens + contextTokens;
+    
+    console.log(`  - Overhead 토큰: ${overheadTokens.toLocaleString()} (시스템 프롬프트 + Gemini 요약 + 컨텍스트)`);
+    
+    // HIGH 메시지를 배치로 분할 (overhead 고려한 실제 예산 사용)
+    const TOTAL_BUDGET = 25000;
+    const MEDIUM_BUDGET = 5000; // MEDIUM 샘플용 (첫 배치에만)
+    const availableBudgetPerBatch = TOTAL_BUDGET - overheadTokens; // 메시지용 실제 예산
+    
+    const highBatches: typeof allHighMessages[] = [];
+    let currentBatch: typeof allHighMessages = [];
+    let currentBatchTokens = 0;
+    
+    for (const msg of allHighMessages) {
+      const msgTokens = Math.ceil(msg.message.length / 2.5);
       
-      // HIGH 메시지 제한 (토큰 예산 초과 시)
-      const maxHighTokens = TOKEN_BUDGET - OVERHEAD_TOKENS - 1000; // MEDIUM을 위한 최소 1000 토큰 확보
-      const avgHighLength = highTokens / highMessages.length;
-      const maxHighCount = Math.floor(maxHighTokens / avgHighLength);
-      
-      highMessages.length = Math.min(highMessages.length, maxHighCount);
-      const adjustedHighTokens = Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
-      console.log(`✓ HIGH 조정: ${highMessages.length}개로 제한 (${adjustedHighTokens} 토큰)`);
+      if (currentBatchTokens + msgTokens > availableBudgetPerBatch && currentBatch.length > 0) {
+        highBatches.push(currentBatch);
+        currentBatch = [msg];
+        currentBatchTokens = msgTokens;
+      } else {
+        currentBatch.push(msg);
+        currentBatchTokens += msgTokens;
+      }
     }
     
-    // 남는 토큰으로 MEDIUM 샘플 선택 (실제 토큰 계산하면서)
-    const currentHighTokens = Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
-    let budgetRemaining = TOKEN_BUDGET - currentHighTokens - OVERHEAD_TOKENS;
-    const mediumSamples: typeof highMessages = [];
+    if (currentBatch.length > 0) {
+      highBatches.push(currentBatch);
+    }
     
+    console.log(`✓ HIGH 메시지를 ${highBatches.length}개 배치로 분할 완료`);
+    console.log(`  예상 분석 시간: 약 ${highBatches.length + 1}분 (Gemini 대기 포함)`);
+    
+    // MEDIUM 샘플: 첫 번째 배치에만 추가 (남은 예산 범위 내에서)
+    const mediumSamples: typeof allHighMessages = [];
     const candidateMedium = (geminiSummary.medium_sample || [])
       .filter(sample => sample.index >= 0 && sample.index < parsed.messages.length);
+    
+    // 첫 번째 배치의 HIGH 토큰 계산
+    const firstBatchHighTokens = highBatches.length > 0
+      ? Math.ceil(highBatches[0].reduce((sum, m) => sum + m.message.length, 0) / 2.5)
+      : 0;
+    
+    // MEDIUM용 남은 예산 = 전체 예산 - overhead - 첫 배치 HIGH
+    let mediumBudget = TOTAL_BUDGET - overheadTokens - firstBatchHighTokens;
     
     for (const sample of candidateMedium) {
       const msg = parsed.messages[sample.index];
       const msgTokens = Math.ceil(msg.content.length / 2.5);
       
-      if (budgetRemaining - msgTokens >= 0) {
+      if (mediumBudget - msgTokens >= 0) {
         mediumSamples.push({
           index: sample.index,
           date: msg.timestamp,
           user: msg.participant,
           message: msg.content,
         });
-        budgetRemaining -= msgTokens;
+        mediumBudget -= msgTokens;
       } else {
-        break; // 예산 초과, 중단
+        break;
       }
     }
     
-    console.log(`✓ 원문 추출 완료: HIGH ${highMessages.length}개, MEDIUM ${mediumSamples.length}개`);
+    console.log(`✓ MEDIUM 샘플 ${mediumSamples.length}개 추출 완료 (첫 배치에 포함, 예산 ${mediumBudget.toLocaleString()} 토큰 남음)`);
 
-    // 6. Claude 입력 패키지 구성
-    console.log(`6단계: Claude 심층 분석 준비 중...`);
+    // 6. 배치별 Claude 심층 분석 (진행률 표시)
+    console.log(`6단계: Claude 심층 분석 시작 (총 ${highBatches.length}개 배치)`);
     
     const participants = Array.from(new Set(parsed.messages.map(m => m.participant)));
     const firstDate = parsed.messages[0]?.timestamp || '';
     const lastDate = parsed.messages[parsed.messages.length - 1]?.timestamp || '';
     
-    const claudeInput: ClaudeInputPackage = {
-      systemPrompt: `당신은 대화 분석 전문가입니다.
+    const allClaudeResults: any[] = [];
+    const totalBatches = highBatches.length;
+    
+    for (let i = 0; i < highBatches.length; i++) {
+      const batchNum = i + 1;
+      const highMessages = highBatches[i];
+      const batchMedium = i === 0 ? mediumSamples : []; // 첫 배치에만 MEDIUM 포함
+      
+      // 진행률 및 예상 시간 계산
+      const remainingBatches = totalBatches - batchNum;
+      const estimatedMinutes = remainingBatches + 1; // 각 배치 1분 + 대기 1분
+      
+      console.log(`\n📊 배치 ${batchNum}/${totalBatches} 분석 중...`);
+      console.log(`   - HIGH 메시지: ${highMessages.length}개`);
+      console.log(`   - MEDIUM 샘플: ${batchMedium.length}개`);
+      console.log(`   - 예상 남은 시간: 약 ${estimatedMinutes}분`);
+      
+      const claudeInput: ClaudeInputPackage = {
+        systemPrompt: `당신은 대화 분석 전문가입니다.
 
 관계 유형: ${primaryRelationship}
 분석 목적: ${userPurpose || '관계 분석'}
+
+${batchNum > 1 ? `[배치 ${batchNum}/${totalBatches}] 핵심 메시지 추가 분석` : ''}
 
 아래 제공된 정보를 바탕으로 깊이 있는 관계 분석을 수행하세요:
 
 1. Gemini 요약: 전체 타임라인과 주요 전환점
 2. HIGH 메시지 전문: 관계의 핵심 순간들
-3. MEDIUM 샘플: 일상적이지만 의미 있는 대화들
+${batchNum === 1 ? '3. MEDIUM 샘플: 일상적이지만 의미 있는 대화들' : ''}
 
 분석 시 고려사항:
 - 관계의 진화 과정
@@ -369,81 +410,88 @@ async function processAnalysis(
 - 관계의 건강도
 
 최종 인사이트를 제공해주세요.`,
-      geminiSummary,
-      highMessages,
-      mediumSamples,
-      relationshipContext: {
-        type: primaryRelationship,
-        purpose: userPurpose || '관계 분석',
-        participants,
-        period: {
-          start: firstDate,
-          end: lastDate,
-          duration: `${Math.ceil((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24))}일`,
+        geminiSummary,
+        highMessages,
+        mediumSamples: batchMedium,
+        relationshipContext: {
+          type: primaryRelationship,
+          purpose: userPurpose || '관계 분석',
+          participants,
+          period: {
+            start: firstDate,
+            end: lastDate,
+            duration: `${Math.ceil((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24))}일`,
+          },
+          statistics: {
+            totalMessages: parsed.messages.length,
+            filteredHigh: allHighMessages.length,
+            filteredMedium: mediumSamples.length,
+            averagePerDay: Math.ceil(parsed.messages.length / Math.max(1, Math.ceil((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24)))),
+          },
+          background: `[배치 ${batchNum}/${totalBatches}] ${participants[0]}님과 ${participants[1] || '상대방'}님의 ${primaryRelationship} 관계 대화 분석입니다.`,
         },
-        statistics: {
-          totalMessages: parsed.messages.length,
-          filteredHigh: highMessages.length,
-          filteredMedium: mediumSamples.length,
-          averagePerDay: Math.ceil(parsed.messages.length / Math.max(1, Math.ceil((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24)))),
+        tokenEstimate: {
+          systemPrompt: Math.ceil(500 / 2.5),
+          geminiSummary: Math.ceil(JSON.stringify(geminiSummary).length / 2.5),
+          highMessages: Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5),
+          mediumSamples: Math.ceil(batchMedium.reduce((sum, m) => sum + m.message.length, 0) / 2.5),
+          relationshipContext: Math.ceil(500 / 2.5),
+          total: 0,
         },
-        background: `${participants[0]}님과 ${participants[1] || '상대방'}님의 ${primaryRelationship} 관계 대화 분석입니다. ${firstDate}부터 ${lastDate}까지 총 ${parsed.messages.length}개의 메시지가 교환되었으며, 이 중 ${highMessages.length}개의 핵심 순간과 ${mediumSamples.length}개의 의미있는 대화를 추출했습니다.`,
-      },
-      tokenEstimate: {
-        systemPrompt: Math.ceil(500 / 2.5),
-        geminiSummary: Math.ceil(JSON.stringify(geminiSummary).length / 2.5),
-        highMessages: Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5),
-        mediumSamples: Math.ceil(mediumSamples.reduce((sum, m) => sum + m.message.length, 0) / 2.5),
-        relationshipContext: Math.ceil(500 / 2.5),
-        total: 0,
-      },
-    };
-    
-    claudeInput.tokenEstimate.total = 
-      claudeInput.tokenEstimate.systemPrompt +
-      claudeInput.tokenEstimate.geminiSummary +
-      claudeInput.tokenEstimate.highMessages +
-      claudeInput.tokenEstimate.mediumSamples +
-      claudeInput.tokenEstimate.relationshipContext;
-    
-    // 최종 토큰 검증: TOKEN_BUDGET 초과 시 반복 트리밍
-    while (claudeInput.tokenEstimate.total > TOKEN_BUDGET) {
-      console.warn(`⚠️  토큰 총합(${claudeInput.tokenEstimate.total})이 예산(${TOKEN_BUDGET})을 초과했습니다.`);
+      };
       
-      // 1단계: MEDIUM 메시지 트리밍
-      if (mediumSamples.length > 0) {
-        const removed = mediumSamples.pop()!;
-        claudeInput.mediumSamples = mediumSamples;
-        claudeInput.tokenEstimate.mediumSamples = Math.ceil(mediumSamples.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
-        console.log(`⚠️  MEDIUM 메시지 1개 제거 (${mediumSamples.length}개 남음)`);
-      }
-      // 2단계: MEDIUM 다 제거했는데도 초과하면 HIGH 트리밍
-      else if (highMessages.length > 0) {
-        const removed = highMessages.pop()!;
-        claudeInput.highMessages = highMessages;
-        claudeInput.tokenEstimate.highMessages = Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
-        console.log(`⚠️  HIGH 메시지 1개 제거 (${highMessages.length}개 남음)`);
-      }
-      // 3단계: 둘 다 비었으면 에러
-      else {
-        throw new Error(`토큰 예산 초과: ${claudeInput.tokenEstimate.total} > ${TOKEN_BUDGET}. Gemini summary나 context가 너무 큽니다.`);
-      }
-      
-      // 토큰 재계산
       claudeInput.tokenEstimate.total = 
         claudeInput.tokenEstimate.systemPrompt +
         claudeInput.tokenEstimate.geminiSummary +
         claudeInput.tokenEstimate.highMessages +
         claudeInput.tokenEstimate.mediumSamples +
         claudeInput.tokenEstimate.relationshipContext;
+      
+      console.log(`   - 총 토큰: ${claudeInput.tokenEstimate.total.toLocaleString()} (HIGH ${highMessages.length}개, MEDIUM ${batchMedium.length}개)`);
+      
+      // 안전 체크: 25K 초과 시 에러 (이론적으로 발생 불가, 방어 코드)
+      if (claudeInput.tokenEstimate.total > TOTAL_BUDGET) {
+        throw new Error(`배치 ${batchNum} 토큰 검증 실패: ${claudeInput.tokenEstimate.total} > ${TOTAL_BUDGET}. 배치 분할 로직 오류입니다.`);
+      }
+      
+      // Claude 분석
+      const claudeResult = await performClaudeDeepAnalysis(claudeInput);
+      allClaudeResults.push(claudeResult);
+      
+      console.log(`✓ 배치 ${batchNum}/${totalBatches} 분석 완료`);
+      
+      // 마지막 배치가 아니면 60초 대기 (rate limit)
+      if (i < highBatches.length - 1) {
+        console.log(`⏳ Rate limit 방지를 위해 60초 대기 중...`);
+        await new Promise(resolve => setTimeout(resolve, 60000));
+      }
     }
     
-    console.log(`✓ Claude 입력 패키지 준비 완료 (토큰: ${claudeInput.tokenEstimate.total.toLocaleString()} / ${TOKEN_BUDGET.toLocaleString()})`);
-
-    // 7. Claude로 심층 분석
-    console.log(`7단계: Claude로 심층 분석 실행 중...`);
-    const claudeResult = await performClaudeDeepAnalysis(claudeInput);
-    console.log(`✓ Claude 분석 완료`);
+    console.log(`\n✅ 모든 배치 분석 완료! 결과 병합 중...`);
+    
+    // 7. 배치 결과 병합 (첫 배치를 기본으로, 나머지는 통합)
+    const claudeResult = allClaudeResults[0];
+    
+    // practicalAdvice 병합 (모든 배치의 조언 통합)
+    if (allClaudeResults.length > 1) {
+      const allActions = new Set<string>();
+      const allStrategies = new Set<string>();
+      const allTips = new Set<string>();
+      
+      for (const result of allClaudeResults) {
+        (result.analysis.practicalAdvice?.immediateActions || []).forEach((a: string) => allActions.add(a));
+        (result.analysis.practicalAdvice?.longTermStrategies || []).forEach((s: string) => allStrategies.add(s));
+        (result.analysis.practicalAdvice?.communicationTips || []).forEach((t: string) => allTips.add(t));
+      }
+      
+      claudeResult.analysis.practicalAdvice = {
+        immediateActions: Array.from(allActions),
+        longTermStrategies: Array.from(allStrategies),
+        communicationTips: Array.from(allTips),
+      };
+      
+      console.log(`✓ ${allClaudeResults.length}개 배치 결과 병합 완료`);
+    }
 
     // 8. Claude 결과를 storage 형식으로 변환
     console.log(`8단계: 결과 변환 및 저장 중...`);
