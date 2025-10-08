@@ -153,35 +153,15 @@ export default function Results() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-6 mb-8 fade-in-up">
-          <div className="flex flex-col md:flex-row items-start md:items-center justify-between">
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                대화 분석 결과
-              </h1>
-              {analysis.userPurpose && (
-                <p className="text-sm text-muted-foreground mt-2">
-                  분석 목적: {analysis.userPurpose}
-                </p>
-              )}
-            </div>
-            <div className="mt-4 md:mt-0 flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setLocation("/")}
-                data-testid="button-home"
-              >
-                <Home className="w-5 h-5 mr-2" />홈
-              </Button>
-              <Button
-                onClick={handleShare}
-                disabled={isSharing}
-                className="bg-primary text-primary-foreground hover:bg-secondary"
-                data-testid="button-share"
-              >
-                <Share2 className="w-5 h-5 mr-2" />
-                {isSharing ? "생성 중..." : "공유하기"}
-              </Button>
-            </div>
+          <div>
+            <h1 className="text-3xl font-bold text-foreground mb-2">
+              대화 분석 결과
+            </h1>
+            {analysis.userPurpose && (
+              <p className="text-sm text-muted-foreground mt-2">
+                분석 목적: {analysis.userPurpose}
+              </p>
+            )}
           </div>
         </div>
 
@@ -700,6 +680,29 @@ export default function Results() {
               </div>
             ))}
           </div>
+        </div>
+
+        {/* Action Buttons - 최하단 배치 */}
+        <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center fade-in-up">
+          <Button
+            variant="outline"
+            onClick={() => setLocation("/")}
+            size="lg"
+            className="w-full sm:w-auto"
+            data-testid="button-home"
+          >
+            <Home className="w-5 h-5 mr-2" />홈으로 돌아가기
+          </Button>
+          <Button
+            onClick={handleShare}
+            disabled={isSharing}
+            size="lg"
+            className="w-full sm:w-auto bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] dark:from-[#2d5a3d] dark:to-[#234a32] hover:from-[#94c9a9] hover:to-[#7ab899] dark:hover:from-[#3d6a4d] dark:hover:to-[#2d5a3d] text-[#1a3a2a] dark:text-white font-semibold"
+            data-testid="button-share"
+          >
+            <Share2 className="w-5 h-5 mr-2" />
+            {isSharing ? "생성 중..." : "공유하기 (24시간)"}
+          </Button>
         </div>
 
         {/* Feedback Popup */}
