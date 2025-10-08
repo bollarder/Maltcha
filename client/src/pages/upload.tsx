@@ -405,17 +405,32 @@ export default function UploadPage() {
               ))}
             </div>
 
-            {/* 선택된 관계 표시 */}
+            {/* 선택된 관계 표시 - 말차 컬러로 강조 */}
             {selectedRelationships.length > 0 && (
-              <div className="mt-4 p-3 bg-primary/10 rounded-lg">
-                <p className="text-sm text-foreground">
-                  <span className="font-medium">선택된 관계 ({selectedRelationships.length}개):</span>{" "}
-                  {selectedRelationships.map(rel => 
-                    rel === "직접 입력" 
+              <div className="mt-6 p-5 bg-gradient-to-br from-[#a8d5ba] to-[#94c9a9] dark:from-[#2d5a3d] dark:to-[#234a32] rounded-xl shadow-md border-2 border-[#8bc9a3] dark:border-[#3d6a4d] animate-in fade-in slide-in-from-bottom-2 duration-300">
+                <div className="flex items-center gap-2 mb-3">
+                  <Check className="w-5 h-5 text-white dark:text-[#a8d5ba]" />
+                  <p className="text-base font-bold text-white dark:text-[#a8d5ba]">
+                    선택된 관계 ({selectedRelationships.length}개)
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {selectedRelationships.map((rel, idx) => {
+                    const displayText = rel === "직접 입력" 
                       ? customRelationship || "직접 입력 중..." 
-                      : rel
-                  ).join(", ")}
-                </p>
+                      : rel;
+                    return (
+                      <div
+                        key={idx}
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/90 dark:bg-[#1a3a2a]/90 rounded-full border border-white/50 dark:border-[#3d6a4d] shadow-sm"
+                      >
+                        <span className="text-sm font-medium text-[#2d5a3d] dark:text-[#a8d5ba]">
+                          {displayText}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
