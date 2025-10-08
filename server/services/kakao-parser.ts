@@ -5,15 +5,30 @@ export interface ParsedConversation {
   participants: Set<string>;
 }
 
+/**
+ * 카카오톡 대화 파일 파싱
+ * 
+ * 지원 형식:
+ * 1. [Name] [Time] Message
+ * 2. 2024. 1. 15. 오후 9:30, Name : Message
+ * 3. 2024-01-15 21:30, Name : Message (CSV 변환 형식, ISO 타임스탬프)
+ * 
+ * CSV 파일은 프론트엔드에서 이 형식으로 변환 후 전송됨
+ */
 export function parseKakaoTalkFile(content: string): ParsedConversation {
   const lines = content.split('\n');
   const messages: Message[] = [];
   const participants = new Set<string>();
   
   // KakaoTalk format: [Name] [Time] Message
-  // Alternative format: 2024. 1. 15. 오후 9:30, Name : Message
   const kakaoRegex1 = /^\[(.+?)\]\s\[(.+?)\]\s(.+)$/;
+  
+  // KakaoTalk format: 2024. 1. 15. 오후 9:30, Name : Message
   const kakaoRegex2 = /^(\d{4}\.\s?\d{1,2}\.\s?\d{1,2}\.\s(?:오전|오후)\s\d{1,2}:\d{2}),\s(.+?)\s:\s(.+)$/;
+  
+  // CSV converted format: 2024-01-15 21:30, Name : Message (ISO timestamp)
+  // Also supports: 2024. 1. 15. 21:30, Name : Message
+  const csvRegex = /^(.+?),\s*(.+?)\s*:\s*(.+)$/;
   
   for (const line of lines) {
     if (!line.trim()) continue;
@@ -39,6 +54,22 @@ export function parseKakaoTalkFile(content: string): ParsedConversation {
         participant,
         content: content.trim(),
       });
+      continue;
+    }
+    
+    // CSV format (fallback)
+    match = line.match(csvRegex);
+    if (match) {
+      const [, timestamp, participant, content] = match;
+      // 타임스탬프가 날짜 형식인지 확인 (간단한 체크)
+      if (timestamp.match(/\d{4}/) && participant && content) {
+        participants.add(participant);
+        messages.push({
+          timestamp: timestamp.trim(),
+          participant: participant.trim(),
+          content: content.trim(),
+        });
+      }
     }
   }
   
@@ -82,9 +113,8 @@ export function calculateStats(messages: Message[], participants: Set<string>) {
 
 function parseKakaoDate(timestamp: string): Date | null {
   try {
-    // Try to parse various KakaoTalk date formats
-    // Format 1: "2024. 1. 15. 오후 9:30"
-    const match = timestamp.match(/(\d{4})\.\s?(\d{1,2})\.\s?(\d{1,2})\.\s(오전|오후)\s(\d{1,2}):(\d{2})/);
+    // Format 1: "2024. 1. 15. 오후 9:30" (Korean AM/PM)
+    let match = timestamp.match(/(\d{4})\.\s?(\d{1,2})\.\s?(\d{1,2})\.\s(오전|오후)\s(\d{1,2}):(\d{2})/);
     if (match) {
       const [, year, month, day, meridiem, hour, minute] = match;
       let hours = parseInt(hour);
@@ -92,6 +122,27 @@ function parseKakaoDate(timestamp: string): Date | null {
       if (meridiem === '오전' && hours === 12) hours = 0;
       return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), hours, parseInt(minute));
     }
+    
+    // Format 2: "2024-01-15 21:30" (ISO-like, 24-hour)
+    match = timestamp.match(/(\d{4})-(\d{1,2})-(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+    if (match) {
+      const [, year, month, day, hour, minute] = match;
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
+    }
+    
+    // Format 3: "2024. 1. 15. 21:30" (Dotted format, 24-hour)
+    match = timestamp.match(/(\d{4})\.\s?(\d{1,2})\.\s?(\d{1,2})\.\s+(\d{1,2}):(\d{2})/);
+    if (match) {
+      const [, year, month, day, hour, minute] = match;
+      return new Date(parseInt(year), parseInt(month) - 1, parseInt(day), parseInt(hour), parseInt(minute));
+    }
+    
+    // Format 4: Generic fallback - try to parse as Date string
+    const parsed = new Date(timestamp);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
+    }
+    
     return null;
   } catch {
     return null;

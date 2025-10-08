@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { Upload, FileText, AlertCircle, Check, Circle, Loader2 } from "lucide-react";
 import JSZip from "jszip";
+import Papa from "papaparse";
 import { apiRequest } from "@/lib/queryClient";
 import MobileWarningDialog from "@/components/mobile-warning-dialog";
 import MobileGuideVideoDialog from "@/components/mobile-GuideVideoDialog";
@@ -130,7 +131,7 @@ export default function UploadPage() {
     [handleFileSelect],
   );
 
-  const processZipFile = async (file: File): Promise<string> => {
+  const processZipFile = async (file: File): Promise<{ content: string; fileName: string }> => {
     try {
       const zip = new JSZip();
       const zipContent = await zip.loadAsync(file);
@@ -146,44 +147,69 @@ export default function UploadPage() {
         throw new Error("zip 파일 내에 txt 또는 csv 파일을 찾을 수 없습니다.");
       }
 
-      const fileContent = await zipContent.files[textFiles[0]].async("text");
+      const fileName = textFiles[0];
+      const fileContent = await zipContent.files[fileName].async("text");
 
       toast({
         title: "zip 파일 처리 완료",
-        description: `${textFiles[0]} 파일을 추출했습니다.`,
+        description: `${fileName} 파일을 추출했습니다.`,
       });
 
-      return fileContent;
+      return { content: fileContent, fileName };
     } catch (error: any) {
       throw new Error(`zip 파일 처리 실패: ${error.message}`);
     }
   };
 
-  const processCsvFile = (content: string): string => {
-    const lines = content.split("\n");
-    const converted = lines
-      .map((line) => {
-        if (
-          !line.trim() ||
-          line.startsWith("Date,") ||
-          line.startsWith("날짜,")
-        ) {
-          return "";
-        }
+  // CSV를 카카오톡 TXT 형식으로 변환 (Papaparse 사용)
+  const convertCsvToKakaoFormat = (csvContent: string): string => {
+    const parsed = Papa.parse(csvContent, {
+      header: false,
+      skipEmptyLines: true,
+      // RFC 4180 표준 준수: 따옴표, 개행, 쉼표 모두 올바르게 처리
+    });
 
-        const parts = line.split(",");
-        if (parts.length >= 4) {
-          const [date, time, name, ...messageParts] = parts;
-          const message = messageParts.join(",").trim();
-          return `${date.trim()} ${time.trim()}, ${name.trim()} : ${message}`;
-        }
+    if (parsed.errors.length > 0) {
+      console.error("CSV 파싱 에러:", parsed.errors);
+    }
 
-        return line;
-      })
-      .filter((line) => line)
-      .join("\n");
+    const converted: string[] = [];
 
-    return converted || content;
+    for (const row of parsed.data as string[][]) {
+      if (!row || row.length < 3) continue;
+
+      const firstCell = row[0]?.toLowerCase() || '';
+      
+      // 헤더 및 메타데이터 라인 건너뛰기
+      if (firstCell.includes('date') || firstCell.includes('날짜') || 
+          firstCell.includes('timestamp') || firstCell.includes('시간') ||
+          firstCell.includes('sep=') || firstCell.includes('user') ||
+          firstCell.includes('사용자')) {
+        continue;
+      }
+
+      let timestamp: string;
+      let user: string;
+      let message: string;
+
+      if (row.length === 3) {
+        // Timestamp,User,Message
+        [timestamp, user, message] = row;
+      } else {
+        // Date,Time,User,Message
+        const [date, time, userName, ...msgParts] = row;
+        timestamp = `${date} ${time}`;
+        user = userName;
+        message = msgParts.join(',');
+      }
+
+      // 카카오톡 형식으로 변환: "2024. 1. 15. 오후 2:30, 이름 : 메시지"
+      if (user && message) {
+        converted.push(`${timestamp}, ${user} : ${message}`);
+      }
+    }
+
+    return converted.join('\n');
   };
 
   const handleAnalyze = async () => {
@@ -194,18 +220,26 @@ export default function UploadPage() {
       const fileName = file.name.toLowerCase();
 
       if (fileName.endsWith(".zip")) {
-        content = await processZipFile(file);
+        // ZIP 파일: 압축 해제 후 첫 번째 txt/csv 파일 추출
+        const { content: extractedContent, fileName: extractedFileName } = await processZipFile(file);
+        
+        // 추출된 파일의 확장자로 CSV 판단 (가장 확실한 방법)
+        if (extractedFileName.toLowerCase().endsWith('.csv')) {
+          content = convertCsvToKakaoFormat(extractedContent);
+        } else {
+          content = extractedContent;
+        }
       } else if (fileName.endsWith(".csv")) {
+        // CSV 파일: 카카오톡 형식으로 변환
         const reader = new FileReader();
-        content = await new Promise<string>((resolve, reject) => {
-          reader.onload = (e) => {
-            const csvContent = e.target?.result as string;
-            resolve(processCsvFile(csvContent));
-          };
+        const csvContent = await new Promise<string>((resolve, reject) => {
+          reader.onload = (e) => resolve(e.target?.result as string);
           reader.onerror = () => reject(new Error("파일 읽기 실패"));
           reader.readAsText(file);
         });
+        content = convertCsvToKakaoFormat(csvContent);
       } else {
+        // TXT 파일: 그대로 읽기
         const reader = new FileReader();
         content = await new Promise<string>((resolve, reject) => {
           reader.onload = (e) => resolve(e.target?.result as string);
