@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { parseKakaoTalkFile, calculateStats, generateChartData } from "./services/kakao-parser";
 import { analyzeConversation } from "./services/anthropic";
+import { processSummaryRequest } from "./services/gemini-summarizer";
 import { nanoid } from "nanoid";
 
 function generateId(): string {
@@ -58,6 +59,28 @@ export function registerRoutes(app: Express): Server {
 
       res.json(analysis);
     } catch (error: any) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+
+  // Gemini 최종 요약 API
+  app.post("/api/summarize", async (req, res) => {
+    try {
+      const { filterResult, relationshipType = "친구" } = req.body;
+
+      if (!filterResult) {
+        return res.status(400).json({ message: "No filter result provided" });
+      }
+
+      console.log(`Received filter result: ${filterResult.stats?.total || 0} messages`);
+
+      // Gemini API로 요약 생성 (서버 메모리에서만 처리)
+      const summary = await processSummaryRequest(filterResult, relationshipType);
+
+      // 결과 반환 후 서버 메모리 자동 해제
+      res.json(summary);
+    } catch (error: any) {
+      console.error("Summarize API error:", error);
       res.status(500).json({ message: error.message });
     }
   });
