@@ -276,27 +276,36 @@ async function processAnalysis(
     console.log(`  - HIGH 인덱스: ${geminiSummary.high_indices.length}개`);
     console.log(`  - MEDIUM 샘플: ${geminiSummary.medium_sample.length}개 (검증 후)`);
 
-    // 5. HIGH 원문 추출 (유효한 메시지만)
+    // 5. HIGH 원문 추출 (유효한 메시지만, 토큰 제한 고려)
     console.log(`5단계: HIGH 원문 추출 중...`);
-    const highMessages = geminiSummary.high_indices
+    
+    // HIGH 메시지 제한: 최대 300개 (약 12,000 토큰 목표)
+    const MAX_HIGH_MESSAGES = 300;
+    const validHighIndices = geminiSummary.high_indices
       .filter(index => index >= 0 && index < parsed.messages.length)
-      .map(index => ({
-        index,
-        date: parsed.messages[index].timestamp,
-        user: parsed.messages[index].participant,
-        message: parsed.messages[index].content,
-      }));
+      .slice(0, MAX_HIGH_MESSAGES); // 상위 N개만 사용
     
-    const mediumSamples = (geminiSummary.medium_sample || [])
+    const highMessages = validHighIndices.map(index => ({
+      index,
+      date: parsed.messages[index].timestamp,
+      user: parsed.messages[index].participant,
+      message: parsed.messages[index].content,
+    }));
+    
+    // MEDIUM 샘플 제한: 최대 150개 (약 6,000 토큰 목표)
+    const MAX_MEDIUM_SAMPLES = 150;
+    const validMediumIndices = (geminiSummary.medium_sample || [])
       .filter(sample => sample.index >= 0 && sample.index < parsed.messages.length)
-      .map(sample => ({
-        index: sample.index,
-        date: parsed.messages[sample.index].timestamp,
-        user: parsed.messages[sample.index].participant,
-        message: parsed.messages[sample.index].content,
-      }));
+      .slice(0, MAX_MEDIUM_SAMPLES); // 상위 N개만 사용
     
-    console.log(`✓ 원문 추출 완료: HIGH ${highMessages.length}개, MEDIUM ${mediumSamples.length}개`);
+    const mediumSamples = validMediumIndices.map(sample => ({
+      index: sample.index,
+      date: parsed.messages[sample.index].timestamp,
+      user: parsed.messages[sample.index].participant,
+      message: parsed.messages[sample.index].content,
+    }));
+    
+    console.log(`✓ 원문 추출 완료: HIGH ${highMessages.length}개 (최대 ${MAX_HIGH_MESSAGES}개), MEDIUM ${mediumSamples.length}개 (최대 ${MAX_MEDIUM_SAMPLES}개)`);
 
     // 6. Claude 입력 패키지 구성
     console.log(`6단계: Claude 심층 분석 준비 중...`);
