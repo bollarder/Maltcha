@@ -4,11 +4,22 @@
 
 Maltcha is a web application that analyzes KakaoTalk conversation exports using AI-powered insights. Users upload their KakaoTalk chat history (.txt files), and the application processes the conversations to generate statistics, visualizations, and AI-driven insights about communication patterns, sentiment, and participant behavior.
 
-The application features a modern, responsive interface with a landing page, file upload system, real-time progress tracking, and comprehensive results visualization with charts and AI-generated insights.
+The application features a modern, responsive interface with a landing page, file upload system, real-time progress tracking, and comprehensive results display showing all Claude AI analysis including relationship assessment, communication patterns, emotional dynamics, and actionable insights.
 
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Recent Changes
+
+### 2025-01-08: Comprehensive Analysis Display
+- **Results Page Redesign**: Now displays all Claude AI analysis content
+  - **Multi-turn Analysis** (when available): Shows Turn 1 (relationship assessment, key events, strengths, concerning patterns) and Turn 2 (communication style, emotional expression, relationship dynamics, special patterns, partner status)
+  - **4-Stage Analysis** (fallback): Shows deep analysis results with communication style, emotional expression, relationship dynamics, special patterns, and partner status
+  - **AI Insights**: Always displays AI-generated actionable insights
+- **Schema Updates**: Added `deepAnalysis` field to support both multi-turn (turn1/turn2) and 4-stage analysis structures
+- **Data Flow**: `deepAnalysis` now properly saved and retrieved from storage, supporting both analysis methods
+- **User Experience**: Results page now shows complete analysis instead of just insights summary
 
 ## System Architecture
 

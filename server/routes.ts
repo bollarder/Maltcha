@@ -202,5 +202,6 @@ async function processAnalysis(
       sentimentDistribution: aiAnalysis.sentimentDistribution,
     },
     insights: aiAnalysis.insights,
+    deepAnalysis: aiAnalysis.deepAnalysis,
   });
 }

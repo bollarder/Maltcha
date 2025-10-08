@@ -128,6 +128,13 @@ export const analysisResultSchema = z.object({
       conclusion: z.string(),
     })
     .optional(),
+  // Multi-turn 심층 분석 결과 (Turn 1, Turn 2)
+  deepAnalysis: z
+    .object({
+      turn1: z.any().optional(),
+      turn2: z.any().optional(),
+    })
+    .optional(),
   error: z.string().optional(),
 });
 
