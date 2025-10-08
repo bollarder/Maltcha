@@ -70,9 +70,10 @@ export async function analyzeConversation(
   options: {
     useMultiTurn?: boolean;
     fallbackOnError?: boolean;
+    userPurpose?: string;
   } = {},
 ): Promise<ConversationAnalysis> {
-  const { useMultiTurn = true, fallbackOnError = true } = options;
+  const { useMultiTurn = true, fallbackOnError = true, userPurpose } = options;
 
   // Multi-turn 사용 (새 방식)
   if (useMultiTurn) {
@@ -85,6 +86,7 @@ export async function analyzeConversation(
         stats,
         primaryRelationship,
         secondaryRelationships,
+        userPurpose,
       );
     }
 
@@ -95,6 +97,7 @@ export async function analyzeConversation(
         stats,
         primaryRelationship,
         secondaryRelationships,
+        userPurpose,
       );
     } catch (error) {
       console.error("Multi-turn 분석 실패:", error);
@@ -107,6 +110,7 @@ export async function analyzeConversation(
           stats,
           primaryRelationship,
           secondaryRelationships,
+          userPurpose,
         );
       }
 
@@ -120,6 +124,7 @@ export async function analyzeConversation(
     stats,
     primaryRelationship,
     secondaryRelationships,
+    userPurpose,
   );
 }
 
@@ -129,15 +134,20 @@ async function analyzeConversation4Stage(
   stats: BasicStats,
   primaryRelationship: string,
   secondaryRelationships: string[],
+  userPurpose?: string,
 ): Promise<ConversationAnalysis> {
   const participants = Array.from(new Set(messages.map((m) => m.participant)));
   const userName = participants[0] || "사용자";
   const partnerName = participants[1] || "상대방";
 
-  const relationshipContext =
+  let relationshipContext =
     secondaryRelationships.length > 0
       ? `${primaryRelationship} (주요) + ${secondaryRelationships.join(", ")} (부가적)`
       : primaryRelationship;
+  
+  if (userPurpose) {
+    relationshipContext += `\n\n분석 목적: ${userPurpose}`;
+  }
 
   console.log("\n======== 4단계 분석 파이프라인 시작 ========");
   console.log(`관계: ${relationshipContext}, 메시지: ${messages.length}개\n`);

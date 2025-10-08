@@ -803,6 +803,7 @@ export async function analyzeConversationMultiTurnSafe(
   stats: any,
   primaryRelationship: string = "친구",
   secondaryRelationships: string[] = [],
+  userPurpose?: string,
 ): Promise<any> {
   try {
     // 각 Turn마다 타임아웃과 재시도 적용
@@ -811,10 +812,14 @@ export async function analyzeConversationMultiTurnSafe(
     );
     const userName = participants[0] || "사용자";
     const partnerName = participants[1] || "상대방";
-    const relationshipContext =
+    let relationshipContext =
       secondaryRelationships.length > 0
         ? `${primaryRelationship} (주요) + ${secondaryRelationships.join(", ")}`
         : primaryRelationship;
+    
+    if (userPurpose) {
+      relationshipContext += `\n\n분석 목적: ${userPurpose}`;
+    }
 
     console.log("\n======== Multi-Turn 분석 시작 (Safe Mode) ========");
     console.log(`참여자: ${userName} ↔ ${partnerName}`);

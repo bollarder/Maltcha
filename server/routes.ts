@@ -188,7 +188,7 @@ async function processAnalysis(
     stats,
     primaryRelationship,
     secondaryRelationships,
-    { useMultiTurn: true }
+    { useMultiTurn: true, userPurpose }
   );
 
   await storage.updateAnalysis(analysisId, {
