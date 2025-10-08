@@ -514,10 +514,10 @@ export default function UploadPage() {
             <div className="text-sm text-blue-900 dark:text-blue-100">
               <p className="font-medium mb-2">카카오톡 대화 내보내기 방법</p>
               <ol className="list-decimal list-inside space-y-1 text-blue-800 dark:text-blue-200">
-                <li>카카오톡 대화방 입장</li>
-                <li>우측 상단 메뉴 → 설정 → 대화 내보내기</li>
-                <li>txt 또는 csv 형식으로 저장</li>
-                <li>저장된 파일을 업로드</li>
+                <li>대화방 상단 우측 메뉴 클릭</li>
+                <li>채팅방 설정 → 대화 내용 관리</li>
+                <li>대화 내용 저장</li>
+                <li>다운로드 저장된 파일을 업로드</li>
               </ol>
             </div>
           </div>
