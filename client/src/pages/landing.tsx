@@ -262,7 +262,7 @@ export default function Landing() {
           <Link href="/upload">
             <Button
               size="lg"
-              className="bg-primary text-primary-foreground hover:bg-secondary transform hover:scale-105 transition-all shadow-lg hover:shadow-xl"
+              className="bg-gradient-to-r from-[#a8d5ba] to-[#8bc9a3] dark:from-[#2d5a3d] dark:to-[#234a32] hover:from-[#94c9a9] hover:to-[#7ab899] dark:hover:from-[#3d6a4d] dark:hover:to-[#2d5a3d] text-[#1a3a2a] dark:text-white transform hover:scale-105 transition-all shadow-lg hover:shadow-xl font-semibold"
               data-testid="button-cta-start"
             >
               무료로 시작하기
