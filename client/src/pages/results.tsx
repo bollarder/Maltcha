@@ -77,7 +77,7 @@ export default function Results() {
       const docHeight = document.documentElement.scrollHeight - window.innerHeight;
       const scrollPercent = (scrollTop / docHeight) * 100;
 
-      if (scrollPercent >= 80 && !showFeedback) {
+      if (scrollPercent >= 95 && !showFeedback) {
         setShowFeedback(true);
       }
     };
