@@ -25,6 +25,7 @@ export const analysisResultSchema = z.object({
   uploadedAt: z.string(),
   status: z.enum(["processing", "completed", "failed"]),
   messages: z.array(messageSchema),
+  userPurpose: z.string().optional(),
   stats: z
     .object({
       totalMessages: z.number(),

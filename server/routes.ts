@@ -17,7 +17,8 @@ export function registerRoutes(app: Express): Server {
       const { 
         content, 
         primaryRelationship = "친구", 
-        secondaryRelationships = [] 
+        secondaryRelationships = [],
+        userPurpose
       } = req.body;
 
       if (!content) {
@@ -35,7 +36,8 @@ export function registerRoutes(app: Express): Server {
         analysis.id, 
         content, 
         primaryRelationship, 
-        secondaryRelationships
+        secondaryRelationships,
+        userPurpose
       ).catch((error) => {
         console.error("Analysis error:", error);
         storage.updateAnalysis(analysis.id, {
@@ -158,7 +160,8 @@ async function processAnalysis(
   analysisId: string, 
   fileContent: string,
   primaryRelationship: string = "친구",
-  secondaryRelationships: string[] = []
+  secondaryRelationships: string[] = [],
+  userPurpose?: string
 ) {
   const parsed = parseKakaoTalkFile(fileContent);
 
@@ -168,6 +171,7 @@ async function processAnalysis(
 
   await storage.updateAnalysis(analysisId, {
     messages: parsed.messages,
+    userPurpose,
     stats,
     charts: {
       ...chartData,
