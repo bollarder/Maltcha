@@ -3,12 +3,63 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, AlertCircle, Check, Circle, Loader2 } from "lucide-react";
+import { Upload, FileText, AlertCircle, Check, ChevronDown } from "lucide-react";
 import JSZip from "jszip";
 import Papa from "papaparse";
 import { apiRequest } from "@/lib/queryClient";
 import MobileWarningDialog from "@/components/mobile-warning-dialog";
 import MobileGuideVideoDialog from "@/components/mobile-GuideVideoDialog";
+
+// 관계 카테고리 데이터
+const relationshipCategories = [
+  {
+    id: "family-lover",
+    label: "가족 및 연인",
+    emoji: "❤️",
+    subcategories: [
+      "배우자", "연인/파트너", "부모", "자녀", "형제자매", "기타 친족", "전 연인/전 배우자"
+    ]
+  },
+  {
+    id: "friend",
+    label: "친구",
+    emoji: "👥",
+    subcategories: [
+      "가장 친한 친구", "친한 친구", "그냥 친구/지인", "동창"
+    ]
+  },
+  {
+    id: "work-school",
+    label: "직장 및 학업",
+    emoji: "💼",
+    subcategories: [
+      "직장 상사/선배", "직장 동료", "직장 부하/후배", "거래처",
+      "선생님/교수님", "학교 선배", "학교 동기", "학교 후배"
+    ]
+  },
+  {
+    id: "social",
+    label: "사회적 관계",
+    emoji: "🤝",
+    subcategories: [
+      "동호회 회원", "이웃", "종교 단체", "온라인 커뮤니티"
+    ]
+  },
+  {
+    id: "public",
+    label: "공적 관계",
+    emoji: "👔",
+    subcategories: [
+      "고객/손님", "서비스 제공자", "면접관", "처음 보는 사람"
+    ]
+  },
+  {
+    id: "other",
+    label: "기타",
+    emoji: "⭐",
+    subcategories: ["직접 입력"]
+  }
+];
 
 export default function UploadPage() {
   const [, setLocation] = useLocation();
@@ -18,23 +69,13 @@ export default function UploadPage() {
   const [showMobileWarning, setShowMobileWarning] = useState(false);
   const [showMobileGuide, setShowMobileGuide] = useState(false);
 
-  // 관계 유형 상태 관리 (단순화)
-  const [selectedRelations, setSelectedRelations] = useState<string[]>(["친구"]);
+  // 관계 선택 상태 (2단계 계층)
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedRelationship, setSelectedRelationship] = useState<string>("");
+  const [customRelationship, setCustomRelationship] = useState<string>("");
   
   // 분석 목적 상태 관리
   const [userPurpose, setUserPurpose] = useState<string>("");
-
-  // 관계 유형 정의
-  const relationshipTypes = [
-    { value: "친구", emoji: "👥", label: "친구" },
-    { value: "연인", emoji: "💕", label: "연인" },
-    { value: "가족", emoji: "👨‍👩‍👧‍👦", label: "가족" },
-    { value: "동료", emoji: "💼", label: "동료" },
-    { value: "선후배", emoji: "🎓", label: "선후배" },
-    { value: "지인", emoji: "🤝", label: "지인" },
-    { value: "온라인 친구", emoji: "💻", label: "온라인 친구" },
-    { value: "기타", emoji: "⭐", label: "기타" },
-  ];
 
   // 모바일 감지
   useEffect(() => {
@@ -44,20 +85,22 @@ export default function UploadPage() {
     }
   }, []);
 
-  // 관계 토글 함수
-  const toggleRelation = (value: string) => {
-    if (selectedRelations.includes(value)) {
-      // 마지막 1개는 해제 불가
-      if (selectedRelations.length === 1) {
-        toast({
-          title: "최소 1개 관계는 선택되어야 해요",
-          duration: 3000,
-        });
-        return;
-      }
-      setSelectedRelations((prev) => prev.filter((r) => r !== value));
+  // 대분류 선택 핸들러
+  const handleCategorySelect = (categoryId: string) => {
+    if (selectedCategory === categoryId) {
+      setSelectedCategory(null);
     } else {
-      setSelectedRelations((prev) => [...prev, value]);
+      setSelectedCategory(categoryId);
+      setSelectedRelationship("");
+      setCustomRelationship("");
+    }
+  };
+
+  // 소분류 선택 핸들러
+  const handleSubcategorySelect = (subcategory: string) => {
+    setSelectedRelationship(subcategory);
+    if (subcategory !== "직접 입력") {
+      setCustomRelationship("");
     }
   };
 
@@ -161,63 +204,47 @@ export default function UploadPage() {
 
       return { content: fileContent, fileName };
     } catch (error: any) {
-      throw new Error(`zip 파일 처리 실패: ${error.message}`);
+      throw new Error(error.message || "zip 파일 처리 중 오류가 발생했습니다.");
     }
   };
 
-  // CSV를 카카오톡 TXT 형식으로 변환 (Papaparse 사용)
-  const convertCsvToKakaoFormat = (csvContent: string): string => {
-    const parsed = Papa.parse(csvContent, {
-      header: false,
-      skipEmptyLines: true,
-      // RFC 4180 표준 준수: 따옴표, 개행, 쉼표 모두 올바르게 처리
-    });
+  const processCsvFile = (content: string): string => {
+    const parsed = Papa.parse(content, { header: false });
+    const rows = parsed.data as string[][];
 
-    if (parsed.errors.length > 0) {
-      console.error("CSV 파싱 에러:", parsed.errors);
-    }
+    const txtLines = rows
+      .filter((row) => row.length >= 3)
+      .map((row) => {
+        const [date, name, ...messageParts] = row;
+        const message = messageParts.join(",");
+        return `${date}, ${name} : ${message}`;
+      });
 
-    const converted: string[] = [];
-
-    for (const row of parsed.data as string[][]) {
-      if (!row || row.length < 3) continue;
-
-      const firstCell = row[0]?.toLowerCase() || '';
-      
-      // 헤더 및 메타데이터 라인 건너뛰기
-      if (firstCell.includes('date') || firstCell.includes('날짜') || 
-          firstCell.includes('timestamp') || firstCell.includes('시간') ||
-          firstCell.includes('sep=') || firstCell.includes('user') ||
-          firstCell.includes('사용자')) {
-        continue;
-      }
-
-      let timestamp: string;
-      let user: string;
-      let message: string;
-
-      if (row.length === 3) {
-        // Timestamp,User,Message
-        [timestamp, user, message] = row;
-      } else {
-        // Date,Time,User,Message
-        const [date, time, userName, ...msgParts] = row;
-        timestamp = `${date} ${time}`;
-        user = userName;
-        message = msgParts.join(',');
-      }
-
-      // 카카오톡 형식으로 변환: "2024. 1. 15. 오후 2:30, 이름 : 메시지"
-      if (user && message) {
-        converted.push(`${timestamp}, ${user} : ${message}`);
-      }
-    }
-
-    return converted.join('\n');
+    return txtLines.join("\n");
   };
 
   const handleAnalyze = async () => {
-    if (!file) return;
+    if (!file) {
+      toast({
+        title: "파일을 선택해주세요",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // 관계 선택 검증
+    const finalRelationship = selectedRelationship === "직접 입력" 
+      ? customRelationship.trim()
+      : selectedRelationship;
+
+    if (!finalRelationship) {
+      toast({
+        title: "관계를 선택해주세요",
+        description: "대화 상대와의 관계를 선택해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     // 분석 목적 필수 검증
     if (!userPurpose.trim()) {
@@ -230,44 +257,26 @@ export default function UploadPage() {
     }
 
     try {
-      let content: string;
-      const fileName = file.name.toLowerCase();
+      let fileContent = "";
+      let fileName = file.name;
 
-      if (fileName.endsWith(".zip")) {
-        // ZIP 파일: 압축 해제 후 첫 번째 txt/csv 파일 추출
-        const { content: extractedContent, fileName: extractedFileName } = await processZipFile(file);
-        
-        // 추출된 파일의 확장자로 CSV 판단 (가장 확실한 방법)
-        if (extractedFileName.toLowerCase().endsWith('.csv')) {
-          content = convertCsvToKakaoFormat(extractedContent);
-        } else {
-          content = extractedContent;
-        }
-      } else if (fileName.endsWith(".csv")) {
-        // CSV 파일: 카카오톡 형식으로 변환
-        const reader = new FileReader();
-        const csvContent = await new Promise<string>((resolve, reject) => {
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.onerror = () => reject(new Error("파일 읽기 실패"));
-          reader.readAsText(file);
-        });
-        content = convertCsvToKakaoFormat(csvContent);
+      if (file.name.toLowerCase().endsWith(".zip")) {
+        const result = await processZipFile(file);
+        fileContent = result.content;
+        fileName = result.fileName;
       } else {
-        // TXT 파일: 그대로 읽기
-        const reader = new FileReader();
-        content = await new Promise<string>((resolve, reject) => {
-          reader.onload = (e) => resolve(e.target?.result as string);
-          reader.onerror = () => reject(new Error("파일 읽기 실패"));
-          reader.readAsText(file);
-        });
+        fileContent = await file.text();
       }
 
-      // 첫 번째 관계를 주관계로, 나머지를 부관계로 전달
+      if (fileName.toLowerCase().endsWith(".csv")) {
+        fileContent = processCsvFile(fileContent);
+      }
+
       analyzeMutation.mutate({
-        content,
-        primaryRelationship: selectedRelations[0],
-        secondaryRelationships: selectedRelations.slice(1),
-        userPurpose: userPurpose.trim() || undefined,
+        content: fileContent,
+        primaryRelationship: finalRelationship,
+        secondaryRelationships: [],
+        userPurpose,
       });
     } catch (error: any) {
       toast({
@@ -278,30 +287,29 @@ export default function UploadPage() {
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  const handleRemoveFile = () => {
+    setFile(null);
   };
 
   return (
-    <div className="min-h-screen py-12 px-4 sm:px-6 lg:px-8 bg-background">
+    <div className="min-h-screen bg-background py-12 px-4">
       <MobileWarningDialog
         open={showMobileWarning}
         onOpenChange={setShowMobileWarning}
       />
+
       <MobileGuideVideoDialog
         open={showMobileGuide}
         onOpenChange={setShowMobileGuide}
       />
 
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-3xl mx-auto">
         {/* Header */}
         <div className="text-center mb-12 fade-in-up">
-          <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+          <h1 className="text-4xl font-bold text-foreground mb-4">
             대화 파일 업로드
           </h1>
-          <p className="text-lg text-muted-foreground">
+          <p className="text-muted-foreground">
             Maltcha AI를 통해 대화를 깊게 분석해보세요
           </p>
         </div>
@@ -310,70 +318,90 @@ export default function UploadPage() {
         {!file && (
           <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
             <label className="block text-sm font-medium text-foreground mb-2">
-              대화 상대와의 관계를 선택해주세요
+              대화 상대와의 관계를 선택해주세요 <span className="text-red-500">*</span>
             </label>
             <p className="text-xs text-muted-foreground mb-4">
-              여러 관계가 해당된다면 모두 선택하세요 (최소 1개 필수)
+              대분류를 선택하고, 구체적인 관계를 고르세요
             </p>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {relationshipTypes.map((type) => {
-                const isSelected = selectedRelations.includes(type.value);
-                const isLastOne = selectedRelations.length === 1 && isSelected;
-
-                return (
+            <div className="space-y-3">
+              {relationshipCategories.map((category) => (
+                <div key={category.id}>
+                  {/* 대분류 버튼 */}
                   <button
-                    key={type.value}
                     type="button"
-                    onClick={() => toggleRelation(type.value)}
-                    disabled={isLastOne}
-                    aria-pressed={isSelected}
-                    aria-label={`${type.label} ${isSelected ? "선택됨" : "선택 안 됨"}`}
-                    className={`
-                      relative p-4 rounded-xl border-2 transition-all duration-200 ease-in-out
-                      flex flex-col items-center justify-center gap-2 min-h-[120px]
-                      ${
-                        isSelected
-                          ? "border-[#A8D5BA] bg-[#E8F5E9]"
-                          : "border-[#E0E0E0] bg-[#F9F9F9] hover:border-[#A8D5BA] hover:bg-[#F0F9F4]"
-                      }
-                      ${isLastOne ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}
-                    `}
-                    data-testid={`relationship-${type.value}`}
+                    onClick={() => handleCategorySelect(category.id)}
+                    className={`w-full p-4 rounded-xl border-2 transition-all duration-200
+                      flex items-center justify-between
+                      ${selectedCategory === category.id
+                        ? "border-primary bg-primary/5"
+                        : "border-border hover:border-primary/50 hover:bg-accent/5"
+                      }`}
+                    data-testid={`category-${category.id}`}
                   >
-                    {/* 아이콘 */}
-                    <div className="absolute top-3 right-3">
-                      {isSelected ? (
-                        <div className="w-6 h-6 rounded-full bg-[#A8D5BA] flex items-center justify-center animate-scale-in">
-                          <Check className="w-4 h-4 text-white" />
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{category.emoji}</span>
+                      <span className="font-medium text-foreground">{category.label}</span>
+                    </div>
+                    <ChevronDown
+                      className={`w-5 h-5 text-muted-foreground transition-transform duration-200 
+                        ${selectedCategory === category.id ? "rotate-180" : ""}`}
+                    />
+                  </button>
+
+                  {/* 소분류 옵션 (아코디언) */}
+                  {selectedCategory === category.id && (
+                    <div className="mt-2 p-4 bg-accent/10 rounded-lg space-y-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                      {category.subcategories.map((subcategory) => (
+                        <button
+                          key={subcategory}
+                          type="button"
+                          onClick={() => handleSubcategorySelect(subcategory)}
+                          className={`w-full p-3 rounded-lg text-left transition-all duration-150
+                            ${selectedRelationship === subcategory
+                              ? "bg-primary text-primary-foreground font-medium"
+                              : "bg-background hover:bg-accent text-foreground"
+                            }`}
+                          data-testid={`subcategory-${subcategory}`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span>{subcategory}</span>
+                            {selectedRelationship === subcategory && (
+                              <Check className="w-4 h-4" />
+                            )}
+                          </div>
+                        </button>
+                      ))}
+
+                      {/* 직접 입력 필드 */}
+                      {selectedRelationship === "직접 입력" && (
+                        <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
+                          <input
+                            type="text"
+                            value={customRelationship}
+                            onChange={(e) => setCustomRelationship(e.target.value)}
+                            placeholder="관계를 입력하세요 (예: 사촌)"
+                            className="w-full p-3 rounded-lg border-2 border-primary bg-background 
+                              text-foreground placeholder:text-muted-foreground
+                              focus:outline-none focus:ring-2 focus:ring-primary/20"
+                            data-testid="input-custom-relationship"
+                          />
                         </div>
-                      ) : (
-                        <Circle className="w-6 h-6 text-[#BDC3C7]" />
                       )}
                     </div>
-
-                    {/* 이모지 */}
-                    <div className="text-4xl mb-1">{type.emoji}</div>
-
-                    {/* 레이블 */}
-                    <div
-                      className={`text-sm text-foreground ${
-                        isSelected ? "font-semibold" : "font-normal"
-                      }`}
-                    >
-                      {type.label}
-                    </div>
-                  </button>
-                );
-              })}
+                  )}
+                </div>
+              ))}
             </div>
 
-            {/* 선택된 관계 요약 */}
-            {selectedRelations.length > 0 && (
-              <div className="mt-4 p-3 bg-accent/20 rounded-lg">
+            {/* 선택된 관계 표시 */}
+            {selectedRelationship && (
+              <div className="mt-4 p-3 bg-primary/10 rounded-lg">
                 <p className="text-sm text-foreground">
                   <span className="font-medium">선택된 관계:</span>{" "}
-                  {selectedRelations.join(", ")}
+                  {selectedRelationship === "직접 입력" 
+                    ? customRelationship || "직접 입력 중..." 
+                    : selectedRelationship}
                 </p>
               </div>
             )}
@@ -435,55 +463,55 @@ export default function UploadPage() {
                     {file.name}
                   </p>
                   <p className="text-sm text-muted-foreground">
-                    {formatFileSize(file.size)}
+                    {(file.size / 1024).toFixed(2)} KB
                   </p>
                 </div>
                 <Button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setFile(null);
+                    handleRemoveFile();
                   }}
                   variant="outline"
-                  size="sm"
+                  className="mt-4"
+                  data-testid="button-remove-file"
                 >
-                  다른 파일 선택
+                  파일 제거
                 </Button>
               </div>
             ) : (
               <div className="space-y-4">
                 <Upload className="w-16 h-16 mx-auto text-muted-foreground" />
                 <div>
-                  <p className="text-lg font-semibold text-foreground mb-2">
+                  <p className="text-lg font-semibold text-foreground">
                     파일을 드래그하거나 클릭하여 업로드
                   </p>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-muted-foreground mt-2">
                     txt, csv, zip 파일 지원 (최대 50MB)
                   </p>
                 </div>
               </div>
             )}
-            <input
-              id="file-input"
-              type="file"
-              accept=".txt,.csv,.zip"
-              onChange={handleFileInput}
-              className="hidden"
-              data-testid="file-input"
-            />
           </div>
+          <input
+            id="file-input"
+            type="file"
+            accept=".txt,.csv,.zip"
+            onChange={handleFileInput}
+            className="hidden"
+            data-testid="input-file"
+          />
 
           {file && (
             <div className="mt-6">
               <Button
                 onClick={handleAnalyze}
                 disabled={analyzeMutation.isPending}
-                className="w-full bg-primary text-primary-foreground hover:bg-secondary"
-                size="lg"
+                className="w-full bg-primary text-primary-foreground hover:bg-secondary text-lg py-6"
                 data-testid="button-analyze"
               >
                 {analyzeMutation.isPending ? (
                   <>
-                    <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                    <div className="w-5 h-5 border-2 border-primary-foreground border-t-transparent rounded-full animate-spin mr-2" />
                     분석 시작 중...
                   </>
                 ) : (

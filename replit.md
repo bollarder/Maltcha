@@ -12,14 +12,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### 2025-01-08: Comprehensive Analysis Display
-- **Results Page Redesign**: Now displays all Claude AI analysis content
-  - **Multi-turn Analysis** (when available): Shows Turn 1 (relationship assessment, key events, strengths, concerning patterns) and Turn 2 (communication style, emotional expression, relationship dynamics, special patterns, partner status)
-  - **4-Stage Analysis** (fallback): Shows deep analysis results with communication style, emotional expression, relationship dynamics, special patterns, and partner status
-  - **AI Insights**: Always displays AI-generated actionable insights
-- **Schema Updates**: Added `deepAnalysis` field to support both multi-turn (turn1/turn2) and 4-stage analysis structures
-- **Data Flow**: `deepAnalysis` now properly saved and retrieved from storage, supporting both analysis methods
-- **User Experience**: Results page now shows complete analysis instead of just insights summary
+### 2025-01-08: UI/UX Improvements
+- **Feedback Popup**: Changed scroll threshold from 80% to 95% for better user experience
+- **Relationship Selection UI**: Redesigned from flat 8-button list to hierarchical 2-level accordion system
+  - **6 Main Categories**: 가족 및 연인, 친구, 직장 및 학업, 사회적 관계, 공적 관계, 기타
+  - **Subcategories**: Each category expands to show specific relationship types
+  - **Direct Input**: "기타 > 직접 입력" option allows custom relationship entry
+  - **Visual Design**: Smooth accordion animations, highlighted selections, responsive mobile layout
+  - **Single Selection**: Changed from multi-select to single relationship selection
+- **Comprehensive Analysis Display**: Results page shows all Claude AI analysis content
+  - **Multi-turn Analysis**: Turn 1 (relationship assessment, key events, strengths, warnings) and Turn 2 (communication style, emotional dynamics, patterns, partner status)
+  - **4-Stage Analysis** (fallback): Deep analysis with communication style, emotional expression, relationship dynamics, special patterns
+  - **AI Insights**: Actionable recommendations based on conversation analysis
+- **Data Flow**: Relationship type and user purpose properly propagate through analysis pipeline to results
 
 ## System Architecture
 
