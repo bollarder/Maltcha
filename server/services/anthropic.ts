@@ -208,6 +208,10 @@ ${formattedSamples}
   const rawExtraction = parseJSON(extractionResponse);
   console.log("Step 1 완료 ✓");
 
+  // Rate limit 방지: API 호출 사이 지연
+  console.log("⏳ Rate limit 방지 대기 중 (15초)...");
+  await new Promise(resolve => setTimeout(resolve, 15000));
+
   // ===== STEP 2: 코드 - 계산 & 가공 =====
   console.log("Step 2: 데이터 처리 및 계산 중...");
 
@@ -302,6 +306,10 @@ ${samples.questions
 
   const deepAnalysis = parseJSON(analysisResponse);
   console.log("Step 3 완료 ✓");
+
+  // Rate limit 방지: API 호출 사이 지연
+  console.log("⏳ Rate limit 방지 대기 중 (15초)...");
+  await new Promise(resolve => setTimeout(resolve, 15000));
 
   // ===== STEP 4: AI - 글쓰기 (더 많은 컨텍스트 제공) =====
   console.log("Step 4: 인사이트 생성 중...");

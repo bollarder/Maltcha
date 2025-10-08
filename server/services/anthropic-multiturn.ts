@@ -205,6 +205,10 @@ async function turn2_deepDive(
   partnerName: string,
   turn1Data: any,
 ) {
+  // Rate limit 방지: API 호출 사이 지연 (Multi-turn은 토큰 사용량이 많아 30초 필요)
+  console.log("\n⏳ Rate limit 방지 대기 중 (30초)...");
+  await new Promise(resolve => setTimeout(resolve, 30000));
+  
   console.log("\n=== Turn 2: 심층 분석 ===");
 
   // Turn 1에서 발견한 주요 이벤트 주변 대화 추출
@@ -439,6 +443,10 @@ async function turn3_report(
   turn1Data: any,
   turn2Data: any,
 ) {
+  // Rate limit 방지: API 호출 사이 지연 (Multi-turn은 토큰 사용량이 많아 30초 필요)
+  console.log("\n⏳ Rate limit 방지 대기 중 (30초)...");
+  await new Promise(resolve => setTimeout(resolve, 30000));
+  
   console.log("\n=== Turn 3: 최종 보고서 생성 ===");
 
   const response = await anthropic.messages.create({
