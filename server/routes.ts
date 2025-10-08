@@ -169,6 +169,12 @@ async function processAnalysis(
   secondaryRelationships: string[] = [],
   userPurpose?: string
 ) {
+  // 선택된 모든 관계 유형 조합
+  const allRelationships = [primaryRelationship, ...secondaryRelationships].filter(Boolean);
+  const relationshipText = allRelationships.join(", ");
+  
+  console.log(`📋 선택된 관계: ${relationshipText} (${allRelationships.length}개)`);
+  
   // 1. 파일 파싱
   console.log("\n========== 분석 시작 ==========");
   console.log("1단계: 파일 파싱 중...");
@@ -241,7 +247,7 @@ async function processAnalysis(
     console.log(`3단계: Gemini로 중요도 필터링 중... (목표: HIGH 7%, MEDIUM 13%)`);
     const filterResults = await processBatches(
       batches,
-      primaryRelationship,
+      relationshipText,
       userPurpose || '관계 분석'
     );
     
@@ -253,7 +259,7 @@ async function processAnalysis(
 
     // 4. Gemini로 전체 패턴 요약 생성
     console.log(`4단계: Gemini로 전체 패턴 요약 생성 중...`);
-    const geminiSummary = await summarizeWithGemini(mergedFilter, primaryRelationship);
+    const geminiSummary = await summarizeWithGemini(mergedFilter, relationshipText);
     
     // 응답 검증 (high_indices와 medium_sample 모두 확인)
     if (!geminiSummary || !Array.isArray(geminiSummary.high_indices)) {
@@ -391,7 +397,7 @@ async function processAnalysis(
       const claudeInput: ClaudeInputPackage = {
         systemPrompt: `당신은 대화 분석 전문가입니다.
 
-관계 유형: ${primaryRelationship}
+관계 유형: ${relationshipText}
 분석 목적: ${userPurpose || '관계 분석'}
 
 ${batchNum > 1 ? `[배치 ${batchNum}/${totalBatches}] 핵심 메시지 추가 분석` : ''}
@@ -414,7 +420,7 @@ ${batchNum === 1 ? '3. MEDIUM 샘플: 일상적이지만 의미 있는 대화들
         highMessages,
         mediumSamples: batchMedium,
         relationshipContext: {
-          type: primaryRelationship,
+          type: relationshipText,
           purpose: userPurpose || '관계 분석',
           participants,
           period: {
@@ -428,7 +434,7 @@ ${batchNum === 1 ? '3. MEDIUM 샘플: 일상적이지만 의미 있는 대화들
             filteredMedium: mediumSamples.length,
             averagePerDay: Math.ceil(parsed.messages.length / Math.max(1, Math.ceil((new Date(lastDate).getTime() - new Date(firstDate).getTime()) / (1000 * 60 * 60 * 24)))),
           },
-          background: `[배치 ${batchNum}/${totalBatches}] ${participants[0]}님과 ${participants[1] || '상대방'}님의 ${primaryRelationship} 관계 대화 분석입니다.`,
+          background: `[배치 ${batchNum}/${totalBatches}] ${participants[0]}님과 ${participants[1] || '상대방'}님의 ${relationshipText} 관계 대화 분석입니다.`,
         },
         tokenEstimate: {
           systemPrompt: Math.ceil(500 / 2.5),
