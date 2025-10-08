@@ -130,7 +130,7 @@ Preferred communication style: Simple, everyday language.
 - **Gemini API** (Google Generative AI): First-stage filtering and summarization
   - Filters messages by importance (HIGH/MEDIUM/LOW) in 2,000-message batches
   - Generates timeline events, turning points, and relationship health summary
-  - Model: `gemini-1.5-pro`
+  - Model: `gemini-2.5-flash`
   - Fallback: If GEMINI_API_KEY missing, skips to Claude-only mode
   
 - **Claude API** (Anthropic): Second-stage deep analysis
