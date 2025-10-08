@@ -3,7 +3,7 @@ import { useLocation } from "wouter";
 import { useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, FileText, AlertCircle, Check, ChevronDown } from "lucide-react";
+import { Upload, FileText, Check, ChevronDown } from "lucide-react";
 import JSZip from "jszip";
 import Papa from "papaparse";
 import { apiRequest } from "@/lib/queryClient";
@@ -533,22 +533,6 @@ export default function UploadPage() {
           >
             📱 모바일 가이드 보기
           </Button>
-        </div>
-
-        {/* Info Section */}
-        <div className="bg-blue-50 dark:bg-blue-950/30 rounded-xl p-6 fade-in-up">
-          <div className="flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-blue-900 dark:text-blue-100">
-              <p className="font-medium mb-2">카카오톡 대화 내보내기 방법</p>
-              <ol className="list-decimal list-inside space-y-1 text-blue-800 dark:text-blue-200">
-                <li>대화방 상단 우측 메뉴 클릭</li>
-                <li>채팅방 설정 → 대화 내용 관리</li>
-                <li>대화 내용 저장</li>
-                <li>다운로드 저장된 파일을 업로드</li>
-              </ol>
-            </div>
-          </div>
         </div>
       </div>
     </div>
