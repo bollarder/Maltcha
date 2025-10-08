@@ -25,6 +25,10 @@ export function registerRoutes(app: Express): Server {
         return res.status(400).json({ message: "No content provided" });
       }
 
+      if (!userPurpose || typeof userPurpose !== 'string' || !userPurpose.trim()) {
+        return res.status(400).json({ message: "분석 목적을 입력해주세요" });
+      }
+
       const analysis = await storage.createAnalysis({
         fileName: "conversation.txt",
         fileSize: content.length,
