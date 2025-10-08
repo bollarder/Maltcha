@@ -12,6 +12,19 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+### 2025-01-08: Gemini + Claude Pipeline Restoration
+- **Pipeline Architecture**: Restored original Gemini (filtering) → Claude (deep analysis) two-stage pipeline
+  - **Gemini Stage**: Filters messages by importance (HIGH 7%, MEDIUM 13%, LOW 80%) in 2,000-message batches, then generates timeline/turning point summary
+  - **Claude Stage**: Performs deep analysis on filtered HIGH messages + MEDIUM samples using structured input package
+  - **Token Optimization**: Reduces Claude input tokens significantly, preventing 30k tokens/minute rate limit errors
+  - **Fallback Logic**: Automatically falls back to Claude-only mode if GEMINI_API_KEY is missing or Gemini pipeline fails
+- **Error Handling**: Robust validation and error recovery
+  - Validates Gemini responses (high_indices, medium_sample arrays)
+  - Filters invalid message indices before Claude processing
+  - Null guards on Claude practicalAdvice arrays to prevent .join() errors
+  - Ensures analysis never gets stuck in "processing" state
+- **Storage Updates**: Deferred stats/charts updates to final stage to prevent partial data persistence on pipeline failure
+
 ### 2025-01-08: UI/UX Improvements
 - **Feedback Popup**: Changed scroll threshold from 80% to 95% for better user experience
 - **Relationship Selection UI**: Redesigned from flat 8-button list to hierarchical 2-level accordion system
@@ -106,10 +119,18 @@ Preferred communication style: Simple, everyday language.
 
 ### External Dependencies
 
-**AI Service**: Anthropic Claude API for conversation analysis. Uses the latest "claude-sonnet-4-20250514" model for generating insights about conversation patterns, sentiment analysis, and behavioral trends. The AI performs multi-stage analysis:
-1. Pattern extraction from conversation data
-2. Sentiment analysis across messages
-3. Insight generation based on identified patterns
+**AI Services**: 
+- **Gemini API** (Google Generative AI): First-stage filtering and summarization
+  - Filters messages by importance (HIGH/MEDIUM/LOW) in 2,000-message batches
+  - Generates timeline events, turning points, and relationship health summary
+  - Model: `gemini-1.5-pro`
+  - Fallback: If GEMINI_API_KEY missing, skips to Claude-only mode
+  
+- **Claude API** (Anthropic): Second-stage deep analysis
+  - Uses filtered messages and Gemini summary for context-aware analysis
+  - Generates comprehensive relationship insights, communication patterns, and actionable advice
+  - Model: `claude-sonnet-4-20250514`
+  - Rate limiting: 15s delays for 4-stage analysis, 30s for multi-turn to prevent 30k tokens/minute errors
 
 **Database**: Neon serverless PostgreSQL (configured via `@neondatabase/serverless` adapter). Currently set up but not actively used due to in-memory storage implementation. Required environment variable: `DATABASE_URL`.
 
@@ -121,7 +142,8 @@ The parser extracts timestamps, participant names, and message content, handling
 
 **Environment Variables**: 
 - `DATABASE_URL` - PostgreSQL connection string (required by Drizzle config)
-- `ANTHROPIC_API_KEY` or `ANTHROPIC_API_KEY_ENV_VAR` - Anthropic API credentials
+- `GEMINI_API_KEY` - Google Generative AI API key (optional, enables Gemini + Claude pipeline; falls back to Claude-only if missing)
+- `ANTHROPIC_API_KEY` or `ANTHROPIC_API_KEY_ENV_VAR` - Anthropic API credentials (required)
 - `NODE_ENV` - Environment mode (development/production)
 
 **Development Tools**:
