@@ -136,10 +136,52 @@ export async function performClaudeDeepAnalysis(
 
     console.log('✅ Claude 응답 수신');
 
-    // 응답 파싱
-    const analysisText = response.content[0].type === 'text' 
-      ? response.content[0].text 
-      : '';
+    // 응답 안전하게 추출
+    const content = response.content;
+    if (!Array.isArray(content) || content.length === 0) {
+      console.warn('⚠️  Claude 응답에 content가 없음');
+      const analysis = createFallbackAnalysis('Claude 응답을 받지 못했습니다.');
+      const processingTime = Date.now() - startTime;
+      const analyzedMessages = input.relationshipContext?.statistics?.totalMessages || 0;
+
+      return {
+        analysis,
+        metadata: {
+          analyzedMessages,
+          highPriorityCount: highCount,
+          mediumSampleCount: mediumCount,
+          analysisDepth: 'failed',
+          processingTime,
+        },
+      };
+    }
+
+    // 모든 text 세그먼트 수집
+    const textSegments = content
+      .filter(block => block.type === 'text')
+      .map(block => block.text)
+      .filter(text => text && text.length > 0);
+
+    if (textSegments.length === 0) {
+      console.warn('⚠️  Claude 응답에 text 세그먼트가 없음');
+      const analysis = createFallbackAnalysis('Claude 응답에 텍스트가 포함되지 않았습니다.');
+      const processingTime = Date.now() - startTime;
+      const analyzedMessages = input.relationshipContext?.statistics?.totalMessages || 0;
+
+      return {
+        analysis,
+        metadata: {
+          analyzedMessages,
+          highPriorityCount: highCount,
+          mediumSampleCount: mediumCount,
+          analysisDepth: 'partial',
+          processingTime,
+        },
+      };
+    }
+
+    // 모든 텍스트 세그먼트 결합
+    const analysisText = textSegments.join('\n\n');
 
     const analysis = parseClaudeResponse(analysisText);
 
