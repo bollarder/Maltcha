@@ -486,7 +486,7 @@ export default function UploadPage() {
                     파일을 드래그하거나 클릭하여 업로드
                   </p>
                   <p className="text-sm text-muted-foreground mt-2">
-                    txt, csv, zip 파일 지원 (최대 50MB)
+                    txt, csv, zip 파일 지원 (최대 10MB)
                   </p>
                 </div>
               </div>
