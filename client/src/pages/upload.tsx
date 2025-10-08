@@ -20,6 +20,9 @@ export default function UploadPage() {
 
   // 관계 유형 상태 관리 (단순화)
   const [selectedRelations, setSelectedRelations] = useState<string[]>(["친구"]);
+  
+  // 분석 목적 상태 관리
+  const [userPurpose, setUserPurpose] = useState<string>("");
 
   // 관계 유형 정의
   const relationshipTypes = [
@@ -63,6 +66,7 @@ export default function UploadPage() {
       content: string;
       primaryRelationship: string;
       secondaryRelationships: string[];
+      userPurpose?: string;
     }) => {
       const res = await apiRequest("POST", "/api/analyze", data);
       return res.json();
@@ -253,6 +257,7 @@ export default function UploadPage() {
         content,
         primaryRelationship: selectedRelations[0],
         secondaryRelationships: selectedRelations.slice(1),
+        userPurpose: userPurpose.trim() || undefined,
       });
     } catch (error: any) {
       toast({
@@ -293,76 +298,107 @@ export default function UploadPage() {
 
         {/* Relationship Type Selection */}
         {!file && (
-          <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
-            <label className="block text-sm font-medium text-foreground mb-2">
-              대화 상대와의 관계를 선택해주세요
-            </label>
-            <p className="text-xs text-muted-foreground mb-4">
-              여러 관계가 해당된다면 모두 선택하세요 (최소 1개 필수)
-            </p>
+          <>
+            <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
+              <label className="block text-sm font-medium text-foreground mb-2">
+                대화 상대와의 관계를 선택해주세요
+              </label>
+              <p className="text-xs text-muted-foreground mb-4">
+                여러 관계가 해당된다면 모두 선택하세요 (최소 1개 필수)
+              </p>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {relationshipTypes.map((type) => {
-                const isSelected = selectedRelations.includes(type.value);
-                const isLastOne = selectedRelations.length === 1 && isSelected;
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {relationshipTypes.map((type) => {
+                  const isSelected = selectedRelations.includes(type.value);
+                  const isLastOne = selectedRelations.length === 1 && isSelected;
 
-                return (
-                  <button
-                    key={type.value}
-                    type="button"
-                    onClick={() => toggleRelation(type.value)}
-                    disabled={isLastOne}
-                    aria-pressed={isSelected}
-                    aria-label={`${type.label} ${isSelected ? "선택됨" : "선택 안 됨"}`}
-                    className={`
-                      relative p-4 rounded-xl border-2 transition-all duration-200 ease-in-out
-                      flex flex-col items-center justify-center gap-2 min-h-[120px]
-                      ${
-                        isSelected
-                          ? "border-[#A8D5BA] bg-[#E8F5E9]"
-                          : "border-[#E0E0E0] bg-[#F9F9F9] hover:border-[#A8D5BA] hover:bg-[#F0F9F4]"
-                      }
-                      ${isLastOne ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}
-                    `}
-                    data-testid={`relationship-${type.value}`}
-                  >
-                    {/* 아이콘 */}
-                    <div className="absolute top-3 right-3">
-                      {isSelected ? (
-                        <div className="w-6 h-6 rounded-full bg-[#A8D5BA] flex items-center justify-center animate-scale-in">
-                          <Check className="w-4 h-4 text-white" />
-                        </div>
-                      ) : (
-                        <Circle className="w-6 h-6 text-[#BDC3C7]" />
-                      )}
-                    </div>
-
-                    {/* 이모지 */}
-                    <div className="text-4xl mb-1">{type.emoji}</div>
-
-                    {/* 레이블 */}
-                    <div
-                      className={`text-sm text-foreground ${
-                        isSelected ? "font-semibold" : "font-normal"
-                      }`}
+                  return (
+                    <button
+                      key={type.value}
+                      type="button"
+                      onClick={() => toggleRelation(type.value)}
+                      disabled={isLastOne}
+                      aria-pressed={isSelected}
+                      aria-label={`${type.label} ${isSelected ? "선택됨" : "선택 안 됨"}`}
+                      className={`
+                        relative p-4 rounded-xl border-2 transition-all duration-200 ease-in-out
+                        flex flex-col items-center justify-center gap-2 min-h-[120px]
+                        ${
+                          isSelected
+                            ? "border-[#A8D5BA] bg-[#E8F5E9]"
+                            : "border-[#E0E0E0] bg-[#F9F9F9] hover:border-[#A8D5BA] hover:bg-[#F0F9F4]"
+                        }
+                        ${isLastOne ? "opacity-70 cursor-not-allowed" : "cursor-pointer"}
+                      `}
+                      data-testid={`relationship-${type.value}`}
                     >
-                      {type.label}
-                    </div>
-                  </button>
-                );
-              })}
+                      {/* 아이콘 */}
+                      <div className="absolute top-3 right-3">
+                        {isSelected ? (
+                          <div className="w-6 h-6 rounded-full bg-[#A8D5BA] flex items-center justify-center animate-scale-in">
+                            <Check className="w-4 h-4 text-white" />
+                          </div>
+                        ) : (
+                          <Circle className="w-6 h-6 text-[#BDC3C7]" />
+                        )}
+                      </div>
+
+                      {/* 이모지 */}
+                      <div className="text-4xl mb-1">{type.emoji}</div>
+
+                      {/* 레이블 */}
+                      <div
+                        className={`text-sm text-foreground ${
+                          isSelected ? "font-semibold" : "font-normal"
+                        }`}
+                      >
+                        {type.label}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 선택된 관계 요약 */}
+              {selectedRelations.length > 0 && (
+                <div className="mt-4 p-3 bg-accent/20 rounded-lg">
+                  <p className="text-sm text-foreground">
+                    <span className="font-medium">선택된 관계:</span>{" "}
+                    {selectedRelations.join(", ")}
+                  </p>
+                </div>
+              )}
             </div>
 
-            {/* 선택된 관계 요약 */}
-            {selectedRelations.length > 0 && (
-              <div className="mt-4 p-3 bg-accent/20 rounded-lg">
-                <p className="text-sm text-foreground">
-                  <span className="font-medium">선택된 관계:</span>{" "}
-                  {selectedRelations.join(", ")}
-                </p>
-              </div>
-            )}
-          </div>
+            {/* Analysis Purpose Input */}
+            <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
+              <label htmlFor="purpose-input" className="block text-sm font-medium text-foreground mb-2">
+                대화에서 무엇이 알고 싶나요?
+              </label>
+              <p className="text-xs text-muted-foreground mb-4">
+                분석 목적을 자유롭게 작성해주세요 (선택사항)
+              </p>
+              <textarea
+                id="purpose-input"
+                value={userPurpose}
+                onChange={(e) => setUserPurpose(e.target.value)}
+                placeholder="예: 우리 관계의 친밀도를 알고 싶어요 / 대화 패턴을 분석하고 싶어요"
+                className="w-full min-h-[120px] p-4 rounded-xl border-2 border-border 
+                          bg-background text-foreground resize-none
+                          focus:outline-none focus:border-primary
+                          placeholder:text-muted-foreground
+                          transition-colors"
+                data-testid="input-purpose"
+              />
+              {userPurpose && (
+                <div className="mt-3 p-3 bg-accent/20 rounded-lg">
+                  <p className="text-xs text-muted-foreground">
+                    💡 AI가 이 목적에 맞춰 대화를 분석합니다
+                  </p>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {/* Upload Zone */}
