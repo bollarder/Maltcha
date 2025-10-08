@@ -219,6 +219,16 @@ export default function UploadPage() {
   const handleAnalyze = async () => {
     if (!file) return;
 
+    // 분석 목적 필수 검증
+    if (!userPurpose.trim()) {
+      toast({
+        title: "분석 목적을 입력해주세요",
+        description: "더 나은 분석 결과를 위해 목적을 작성해주세요.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     try {
       let content: string;
       const fileName = file.name.toLowerCase();
@@ -373,16 +383,17 @@ export default function UploadPage() {
             {/* Analysis Purpose Input */}
             <div className="bg-card dark:bg-card rounded-2xl shadow-lg p-8 mb-8 fade-in-up">
               <label htmlFor="purpose-input" className="block text-sm font-medium text-foreground mb-2">
-                대화에서 무엇이 알고 싶나요?
+                대화에서 무엇이 알고 싶나요? <span className="text-red-500">*</span>
               </label>
               <p className="text-xs text-muted-foreground mb-4">
-                분석 목적을 자유롭게 작성해주세요 (선택사항)
+                분석 목적을 자유롭게 작성해주세요 (필수)
               </p>
               <textarea
                 id="purpose-input"
                 value={userPurpose}
                 onChange={(e) => setUserPurpose(e.target.value)}
                 placeholder="예: 우리 관계의 친밀도를 알고 싶어요 / 대화 패턴을 분석하고 싶어요"
+                required
                 className="w-full min-h-[120px] p-4 rounded-xl border-2 border-border 
                           bg-background text-foreground resize-none
                           focus:outline-none focus:border-primary
