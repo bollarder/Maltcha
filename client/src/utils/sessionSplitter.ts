@@ -14,7 +14,7 @@ export interface Batch {
  * 메시지 배열을 세션 기반으로 스마트 분할
  * @param messages 메시지 배열
  * @param targetSize 목표 배치 크기 (기본값: 2000)
- * @returns 분할된 배치 배열
+ * @returns 분할된 배치 배열 (1800~2200개 유연한 크기)
  */
 export function splitBySession(messages: Message[], targetSize = 2000): Batch[] {
   const batches: Batch[] = [];
@@ -24,31 +24,30 @@ export function splitBySession(messages: Message[], targetSize = 2000): Batch[] 
 
   for (let i = 0; i < messages.length; i++) {
     const currentMsg = messages[i];
-
     currentBatch.push(currentMsg);
 
     // 다음 메시지 확인
     const nextMsg = messages[i + 1];
     
-    // 배치 완료 조건 체크
+    // 배치 완료 조건
     let shouldFinalizeBatch = false;
 
     if (!nextMsg) {
       // 마지막 메시지면 배치 완료
       shouldFinalizeBatch = true;
-    } else {
+    } else if (currentBatch.length >= maxSize) {
+      // 2200개 도달 시 무조건 배치 완료 (상한선)
+      shouldFinalizeBatch = true;
+    } else if (currentBatch.length >= targetSize) {
+      // 2000개 도달 시 다음 메시지와 세션 종료 여부 체크
       const gapToNext = calculateGapMinutes(currentMsg, nextMsg);
       const isNextSessionEnd = isSessionEnd(currentMsg, nextMsg, gapToNext);
 
       if (isNextSessionEnd) {
-        // 세션이 끝나면 무조건 배치 완료
+        // 세션 끝이면 배치 완료
         shouldFinalizeBatch = true;
-      } else if (currentBatch.length >= maxSize) {
-        // 2200 초과 방지를 위한 강제 분할
-        shouldFinalizeBatch = true;
-      } else if (currentBatch.length >= targetSize) {
-        // targetSize 도달 후 세션이 끝나지 않았으면 다음 세션 끝을 기다림
-        // 단, 2200 미만일 때만 계속 추가
+      } else {
+        // 세션 중간이면 계속 추가 (2200까지)
         shouldFinalizeBatch = false;
       }
     }
@@ -63,7 +62,7 @@ export function splitBySession(messages: Message[], targetSize = 2000): Batch[] 
     }
   }
 
-  // 남은 메시지 처리 (위 로직에서 처리되지만 안전장치)
+  // 남은 메시지 처리
   if (currentBatch.length > 0) {
     batches.push({
       batchId: batchId,
