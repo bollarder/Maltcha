@@ -141,10 +141,10 @@ export default function UploadPage() {
         return;
       }
 
-      if (selectedFile.size > 20 * 1024 * 1024) {
+      if (selectedFile.size > 10 * 1024 * 1024) {
         toast({
           title: "파일 크기 초과",
-          description: "파일 크기는 20MB를 초과할 수 없습니다.",
+          description: "파일 크기는 10MB를 초과할 수 없습니다.",
           variant: "destructive",
         });
         return;
