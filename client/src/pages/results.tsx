@@ -70,21 +70,20 @@ export default function Results() {
   };
 
   useEffect(() => {
-    // 피드백 팝업 임시 비활성화
-    // if (feedbackSubmitted) return;
+    if (feedbackSubmitted) return;
 
-    // const handleScroll = () => {
-    //   const scrollTop = window.scrollY;
-    //   const docHeight = document.documentElement.scrollHeight - window.innerHeight;
-    //   const scrollPercent = (scrollTop / docHeight) * 100;
+    const handleScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const scrollPercent = (scrollTop / docHeight) * 100;
 
-    //   if (scrollPercent >= 80 && !showFeedback) {
-    //     setShowFeedback(true);
-    //   }
-    // };
+      if (scrollPercent >= 80 && !showFeedback) {
+        setShowFeedback(true);
+      }
+    };
 
-    // window.addEventListener('scroll', handleScroll);
-    // return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
   }, [showFeedback, feedbackSubmitted]);
 
   const handleFeedbackSubmit = (data: any) => {
