@@ -1,0 +1,76 @@
+TypeScript로 Gemini API를 사용한 배치 필터링을 구현해주세요.
+
+src/utils/geminiFilter.ts 파일 생성
+
+필요 패키지: npm install @google/generative-ai
+
+인터페이스:
+interface Message { date: string; user: string; message: string; index: number; }
+interface FilteredMessage extends Message { importance: 'HIGH' | 'MEDIUM'; reason: string; }
+interface FilterResult { high: FilteredMessage[]; medium: FilteredMessage[]; stats: { total: number; high: number; medium: number; low: number; } }
+
+주요 함수:
+
+1. filterBatch(batch: Message[], relationshipType: string, analysisPurpose: string): Promise<FilterResult>
+   - Gemini API 호출하여 배치 필터링
+   - 환경변수 GEMINI_API_KEY 사용
+   - 모델: gemini-1.5-pro
+
+2. createFilterPrompt(batch: Message[], relationshipType: string, analysisPurpose: string): string
+   프롬프트 구성:
+당신은 대화 분석 전문가입니다.
+관계 유형: {relationshipType}
+분석 목적: {analysisPurpose}
+아래 {batch.length}개 메시지에서 중요도를 판단하세요:
+
+HIGH: 관계 전환점, 갈등, 중요 의사결정, 감정 변화
+MEDIUM: 의미있는 대화, 계획, 중요 일상
+LOW: 단순 인사, 반응 (ㅋㅋ, ㅇㅇ 등 - 개수만 세고 저장 안함)
+
+JSON 형식으로 출력:
+{
+"high": [
+{"index": 0, "date": "...", "user": "...", "message": "...", "reason": "관계 갈등 폭발"}
+],
+"medium": [...],
+"stats": {"total": {batch.length}, "high": 0, "medium": 0, "low": 0}
+}
+메시지:
+{batch.map((m, i) => ${i}. [${m.date}] ${m.user}: ${m.message}).join('\n')}
+
+3. processBatches(batches: Message[][], relationshipType: string, analysisPurpose: string, onProgress?: (current: number, total: number) => void): Promise<FilterResult[]>
+   - 모든 배치를 순차 처리
+   - 각 배치마다 filterBatch() 호출
+   - onProgress 콜백으로 진행 상황 전달
+   - 각 배치 처리 후 1초 대기 (Rate Limit 방지)
+
+4. mergeFilterResults(results: FilterResult[]): FilterResult
+   - 모든 배치 결과 병합
+   - high 배열들 합치기
+   - medium 배열들 합치기
+   - stats 통계 합산
+   - 중복 제거 (index 기준)
+
+사용 예시:
+const batches = splitBySession(messages, 2000);
+const results = await processBatches(batches, "연인", "이별 위기 분석", (current, total) => {
+  console.log(`배치 처리 중: ${current}/${total}`);
+});
+const merged = mergeFilterResults(results);
+
+에러 처리:
+- API 호출 실패: 3회 재시도 (1초 간격)
+- JSON 파싱 실패: console.error 후 빈 결과 반환
+- Rate Limit 에러: 5초 대기 후 재시도
+
+출력 통계:
+- 전체 126,844개 → HIGH 7% (8,879개), MEDIUM 13% (16,489개), LOW 80% 버림
+- LOW는 개수만 세고 원문 저장 안함 (메모리 절약)
+- HIGH/MEDIUM만 원문 + 인덱스 + 이유 포함
+
+메모리 관리:
+- 각 배치 처리 완료 후 해당 배치 참조 해제
+- 서버는 메모리에서만 처리, 디스크 저장 없음
+- 결과만 브라우저로 반환
+
+export { filterBatch, processBatches, mergeFilterResults, FilteredMessage, FilterResult }
