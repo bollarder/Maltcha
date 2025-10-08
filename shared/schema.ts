@@ -88,6 +88,46 @@ export const analysisResultSchema = z.object({
       partnerStatus: z.any().optional(),
     })
     .optional(),
+  // Claude 심층 분석 결과
+  claudeAnalysis: z
+    .object({
+      relationshipOverview: z.string(),
+      communicationPatterns: z.object({
+        tikitakaAnalysis: z.string(),
+        conversationFlow: z.string(),
+        responsePatterns: z.string(),
+      }),
+      emotionalDynamics: z.object({
+        sentimentTrends: z.string(),
+        emotionalMoments: z.array(
+          z.object({
+            type: z.string(),
+            description: z.string(),
+            context: z.string(),
+          })
+        ),
+        emotionalBalance: z.string(),
+      }),
+      psychologicalInsights: z.object({
+        attachmentStyle: z.string(),
+        conflictResolution: z.string(),
+        intimacyPatterns: z.string(),
+        communicationBarriers: z.string(),
+      }),
+      relationshipHealth: z.object({
+        currentState: z.string(),
+        strengths: z.array(z.string()),
+        concerns: z.array(z.string()),
+        trajectory: z.string(),
+      }),
+      practicalAdvice: z.object({
+        immediateActions: z.array(z.string()),
+        longTermStrategies: z.array(z.string()),
+        communicationTips: z.array(z.string()),
+      }),
+      conclusion: z.string(),
+    })
+    .optional(),
   error: z.string().optional(),
 });
 
