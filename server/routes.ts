@@ -275,37 +275,72 @@ async function processAnalysis(
     console.log(`  - 전환점: ${geminiSummary.turning_points?.length || 0}개`);
     console.log(`  - HIGH 인덱스: ${geminiSummary.high_indices.length}개`);
     console.log(`  - MEDIUM 샘플: ${geminiSummary.medium_sample.length}개 (검증 후)`);
+    
+    // Rate Limit 방지: Gemini 요약 후 60초 대기 (Gemini + Claude 합산 토큰 분산)
+    console.log(`⏳ Rate limit 방지를 위해 60초 대기 중... (심층 분석 준비)`);
+    await new Promise(resolve => setTimeout(resolve, 60000));
 
-    // 5. HIGH 원문 추출 (유효한 메시지만, 토큰 제한 고려)
+    // 5. HIGH 원문 추출 (핵심 순간은 전부 가져오기)
     console.log(`5단계: HIGH 원문 추출 중...`);
     
-    // HIGH 메시지 제한: 최대 300개 (약 12,000 토큰 목표)
-    const MAX_HIGH_MESSAGES = 300;
-    const validHighIndices = geminiSummary.high_indices
+    // HIGH 메시지: 제한 없음 (관계의 핵심 순간은 절대 놓치면 안 됨)
+    const highMessages = geminiSummary.high_indices
       .filter(index => index >= 0 && index < parsed.messages.length)
-      .slice(0, MAX_HIGH_MESSAGES); // 상위 N개만 사용
+      .map(index => ({
+        index,
+        date: parsed.messages[index].timestamp,
+        user: parsed.messages[index].participant,
+        message: parsed.messages[index].content,
+      }));
     
-    const highMessages = validHighIndices.map(index => ({
-      index,
-      date: parsed.messages[index].timestamp,
-      user: parsed.messages[index].participant,
-      message: parsed.messages[index].content,
-    }));
+    // MEDIUM 샘플: 토큰 예산 고려 (보조 맥락, 샘플로 충분)
+    // HIGH 메시지 토큰 추정
+    const highTokens = Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
+    const TOKEN_BUDGET = 25000; // 안전 마진 포함 (Claude 입력 전체)
+    const OVERHEAD_TOKENS = 3000; // Gemini summary + context
+    const remainingTokens = TOKEN_BUDGET - highTokens - OVERHEAD_TOKENS;
     
-    // MEDIUM 샘플 제한: 최대 150개 (약 6,000 토큰 목표)
-    const MAX_MEDIUM_SAMPLES = 150;
-    const validMediumIndices = (geminiSummary.medium_sample || [])
-      .filter(sample => sample.index >= 0 && sample.index < parsed.messages.length)
-      .slice(0, MAX_MEDIUM_SAMPLES); // 상위 N개만 사용
+    // 토큰 예산 초과 경고
+    if (highTokens > TOKEN_BUDGET - OVERHEAD_TOKENS) {
+      console.warn(`⚠️  HIGH 메시지 토큰(${highTokens})이 예산(${TOKEN_BUDGET - OVERHEAD_TOKENS})을 초과했습니다.`);
+      console.warn(`⚠️  HIGH 메시지를 상위 ${Math.floor((TOKEN_BUDGET - OVERHEAD_TOKENS) / (highTokens / highMessages.length))}개로 제한합니다.`);
+      
+      // HIGH 메시지 제한 (토큰 예산 초과 시)
+      const maxHighTokens = TOKEN_BUDGET - OVERHEAD_TOKENS - 1000; // MEDIUM을 위한 최소 1000 토큰 확보
+      const avgHighLength = highTokens / highMessages.length;
+      const maxHighCount = Math.floor(maxHighTokens / avgHighLength);
+      
+      highMessages.length = Math.min(highMessages.length, maxHighCount);
+      const adjustedHighTokens = Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
+      console.log(`✓ HIGH 조정: ${highMessages.length}개로 제한 (${adjustedHighTokens} 토큰)`);
+    }
     
-    const mediumSamples = validMediumIndices.map(sample => ({
-      index: sample.index,
-      date: parsed.messages[sample.index].timestamp,
-      user: parsed.messages[sample.index].participant,
-      message: parsed.messages[sample.index].content,
-    }));
+    // 남는 토큰으로 MEDIUM 샘플 선택 (실제 토큰 계산하면서)
+    const currentHighTokens = Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
+    let budgetRemaining = TOKEN_BUDGET - currentHighTokens - OVERHEAD_TOKENS;
+    const mediumSamples: typeof highMessages = [];
     
-    console.log(`✓ 원문 추출 완료: HIGH ${highMessages.length}개 (최대 ${MAX_HIGH_MESSAGES}개), MEDIUM ${mediumSamples.length}개 (최대 ${MAX_MEDIUM_SAMPLES}개)`);
+    const candidateMedium = (geminiSummary.medium_sample || [])
+      .filter(sample => sample.index >= 0 && sample.index < parsed.messages.length);
+    
+    for (const sample of candidateMedium) {
+      const msg = parsed.messages[sample.index];
+      const msgTokens = Math.ceil(msg.content.length / 2.5);
+      
+      if (budgetRemaining - msgTokens >= 0) {
+        mediumSamples.push({
+          index: sample.index,
+          date: msg.timestamp,
+          user: msg.participant,
+          message: msg.content,
+        });
+        budgetRemaining -= msgTokens;
+      } else {
+        break; // 예산 초과, 중단
+      }
+    }
+    
+    console.log(`✓ 원문 추출 완료: HIGH ${highMessages.length}개, MEDIUM ${mediumSamples.length}개`);
 
     // 6. Claude 입력 패키지 구성
     console.log(`6단계: Claude 심층 분석 준비 중...`);
@@ -371,7 +406,39 @@ async function processAnalysis(
       claudeInput.tokenEstimate.mediumSamples +
       claudeInput.tokenEstimate.relationshipContext;
     
-    console.log(`✓ Claude 입력 패키지 준비 완료 (추정 토큰: ${claudeInput.tokenEstimate.total.toLocaleString()})`);
+    // 최종 토큰 검증: TOKEN_BUDGET 초과 시 반복 트리밍
+    while (claudeInput.tokenEstimate.total > TOKEN_BUDGET) {
+      console.warn(`⚠️  토큰 총합(${claudeInput.tokenEstimate.total})이 예산(${TOKEN_BUDGET})을 초과했습니다.`);
+      
+      // 1단계: MEDIUM 메시지 트리밍
+      if (mediumSamples.length > 0) {
+        const removed = mediumSamples.pop()!;
+        claudeInput.mediumSamples = mediumSamples;
+        claudeInput.tokenEstimate.mediumSamples = Math.ceil(mediumSamples.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
+        console.log(`⚠️  MEDIUM 메시지 1개 제거 (${mediumSamples.length}개 남음)`);
+      }
+      // 2단계: MEDIUM 다 제거했는데도 초과하면 HIGH 트리밍
+      else if (highMessages.length > 0) {
+        const removed = highMessages.pop()!;
+        claudeInput.highMessages = highMessages;
+        claudeInput.tokenEstimate.highMessages = Math.ceil(highMessages.reduce((sum, m) => sum + m.message.length, 0) / 2.5);
+        console.log(`⚠️  HIGH 메시지 1개 제거 (${highMessages.length}개 남음)`);
+      }
+      // 3단계: 둘 다 비었으면 에러
+      else {
+        throw new Error(`토큰 예산 초과: ${claudeInput.tokenEstimate.total} > ${TOKEN_BUDGET}. Gemini summary나 context가 너무 큽니다.`);
+      }
+      
+      // 토큰 재계산
+      claudeInput.tokenEstimate.total = 
+        claudeInput.tokenEstimate.systemPrompt +
+        claudeInput.tokenEstimate.geminiSummary +
+        claudeInput.tokenEstimate.highMessages +
+        claudeInput.tokenEstimate.mediumSamples +
+        claudeInput.tokenEstimate.relationshipContext;
+    }
+    
+    console.log(`✓ Claude 입력 패키지 준비 완료 (토큰: ${claudeInput.tokenEstimate.total.toLocaleString()} / ${TOKEN_BUDGET.toLocaleString()})`);
 
     // 7. Claude로 심층 분석
     console.log(`7단계: Claude로 심층 분석 실행 중...`);

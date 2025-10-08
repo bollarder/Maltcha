@@ -12,12 +12,18 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-### 2025-01-08: Gemini + Claude Pipeline Restoration
+### 2025-01-08: Gemini + Claude Pipeline Restoration & Rate Limit Fix
 - **Pipeline Architecture**: Restored original Gemini (filtering) → Claude (deep analysis) two-stage pipeline
   - **Gemini Stage**: Filters messages by importance (HIGH 7%, MEDIUM 13%, LOW 80%) in 2,000-message batches, then generates timeline/turning point summary
   - **Claude Stage**: Performs deep analysis on filtered HIGH messages + MEDIUM samples using structured input package
   - **Token Optimization**: Reduces Claude input tokens significantly, preventing 30k tokens/minute rate limit errors
   - **Fallback Logic**: Automatically falls back to Claude-only mode if GEMINI_API_KEY is missing or Gemini pipeline fails
+- **Rate Limit Prevention (429 Error Fix)**:
+  - **60-second delay**: Added between Gemini and Claude to distribute tokens across minutes (0-60s: Gemini, 60-120s: Claude)
+  - **Token budget system**: Enforces 25,000 token limit for Claude input
+    - MEDIUM messages: Selected with real-time token calculation
+    - Final verification: Iterative trimming (MEDIUM → HIGH) until budget met
+    - Absolute guarantee: Claude input ≤ 25K tokens, total per-minute ≤ 30K
 - **Error Handling**: Robust validation and error recovery
   - Validates Gemini responses (high_indices, medium_sample arrays)
   - Filters invalid message indices before Claude processing
