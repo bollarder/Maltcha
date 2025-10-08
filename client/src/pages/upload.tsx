@@ -69,9 +69,9 @@ export default function UploadPage() {
   const [showMobileWarning, setShowMobileWarning] = useState(false);
   const [showMobileGuide, setShowMobileGuide] = useState(false);
 
-  // 관계 선택 상태 (2단계 계층)
+  // 관계 선택 상태 (2단계 계층) - 다중 선택 가능
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [selectedRelationship, setSelectedRelationship] = useState<string>("");
+  const [selectedRelationships, setSelectedRelationships] = useState<string[]>([]);
   const [customRelationship, setCustomRelationship] = useState<string>("");
   
   // 분석 목적 상태 관리
@@ -91,15 +91,26 @@ export default function UploadPage() {
       setSelectedCategory(null);
     } else {
       setSelectedCategory(categoryId);
-      setSelectedRelationship("");
-      setCustomRelationship("");
     }
   };
 
-  // 소분류 선택 핸들러
+  // 소분류 선택 핸들러 - 토글 방식으로 여러 관계 선택 가능
   const handleSubcategorySelect = (subcategory: string) => {
-    setSelectedRelationship(subcategory);
-    if (subcategory !== "직접 입력") {
+    if (subcategory === "직접 입력") {
+      // 직접 입력은 다른 관계와 함께 선택 불가
+      setSelectedRelationships(["직접 입력"]);
+    } else {
+      // 이미 선택된 관계면 제거, 아니면 추가
+      setSelectedRelationships(prev => {
+        // 직접 입력이 선택되어 있으면 제거하고 새 관계 추가
+        const filtered = prev.filter(r => r !== "직접 입력");
+        
+        if (filtered.includes(subcategory)) {
+          return filtered.filter(r => r !== subcategory);
+        } else {
+          return [...filtered, subcategory];
+        }
+      });
       setCustomRelationship("");
     }
   };
@@ -232,15 +243,15 @@ export default function UploadPage() {
       return;
     }
 
-    // 관계 선택 검증
-    const finalRelationship = selectedRelationship === "직접 입력" 
-      ? customRelationship.trim()
-      : selectedRelationship;
+    // 관계 선택 검증 (다중 선택)
+    const finalRelationships = selectedRelationships.includes("직접 입력")
+      ? [customRelationship.trim()]
+      : selectedRelationships;
 
-    if (!finalRelationship) {
+    if (finalRelationships.length === 0 || finalRelationships.some(r => !r)) {
       toast({
         title: "관계를 선택해주세요",
-        description: "대화 상대와의 관계를 선택해주세요.",
+        description: "대화 상대와의 관계를 최소 1개 이상 선택해주세요.",
         variant: "destructive",
       });
       return;
@@ -274,8 +285,8 @@ export default function UploadPage() {
 
       analyzeMutation.mutate({
         content: fileContent,
-        primaryRelationship: finalRelationship,
-        secondaryRelationships: [],
+        primaryRelationship: finalRelationships[0],
+        secondaryRelationships: finalRelationships.slice(1),
         userPurpose,
       });
     } catch (error: any) {
@@ -358,7 +369,7 @@ export default function UploadPage() {
                           type="button"
                           onClick={() => handleSubcategorySelect(subcategory)}
                           className={`w-full p-3 rounded-lg text-left transition-all duration-150
-                            ${selectedRelationship === subcategory
+                            ${selectedRelationships.includes(subcategory)
                               ? "bg-primary text-primary-foreground font-medium"
                               : "bg-background hover:bg-accent text-foreground"
                             }`}
@@ -366,7 +377,7 @@ export default function UploadPage() {
                         >
                           <div className="flex items-center justify-between">
                             <span>{subcategory}</span>
-                            {selectedRelationship === subcategory && (
+                            {selectedRelationships.includes(subcategory) && (
                               <Check className="w-4 h-4" />
                             )}
                           </div>
@@ -374,7 +385,7 @@ export default function UploadPage() {
                       ))}
 
                       {/* 직접 입력 필드 */}
-                      {selectedRelationship === "직접 입력" && (
+                      {selectedRelationships.includes("직접 입력") && (
                         <div className="mt-3 animate-in fade-in slide-in-from-top-2 duration-200">
                           <input
                             type="text"
@@ -395,13 +406,15 @@ export default function UploadPage() {
             </div>
 
             {/* 선택된 관계 표시 */}
-            {selectedRelationship && (
+            {selectedRelationships.length > 0 && (
               <div className="mt-4 p-3 bg-primary/10 rounded-lg">
                 <p className="text-sm text-foreground">
-                  <span className="font-medium">선택된 관계:</span>{" "}
-                  {selectedRelationship === "직접 입력" 
-                    ? customRelationship || "직접 입력 중..." 
-                    : selectedRelationship}
+                  <span className="font-medium">선택된 관계 ({selectedRelationships.length}개):</span>{" "}
+                  {selectedRelationships.map(rel => 
+                    rel === "직접 입력" 
+                      ? customRelationship || "직접 입력 중..." 
+                      : rel
+                  ).join(", ")}
                 </p>
               </div>
             )}
