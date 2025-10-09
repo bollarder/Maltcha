@@ -309,8 +309,13 @@ async function processAnalysis(
     console.log(`  - MEDIUM: ${mergedFilter.medium.length}개 (${(mergedFilter.medium.length / mergedFilter.stats.total * 100).toFixed(1)}%)`);
     console.log(`  - LOW: ${mergedFilter.stats.low}개 (${(mergedFilter.stats.low / mergedFilter.stats.total * 100).toFixed(1)}%)`);
 
-    // 4. Gemini로 전체 패턴 요약 생성
-    console.log(`4단계: Gemini로 전체 패턴 요약 생성 중...`);
+    // 4. Stage 2: 배치별 요약 생성 (FBI 배치 요약 프로토콜)
+    console.log(`4단계: Stage 2 - 배치별 요약 생성 중...`);
+    const { summarizeAllBatches } = await import('./services/gemini-batch-summary');
+    const batchSummaries = await summarizeAllBatches(filterResults, parsed.messages);
+
+    // 5. Gemini로 전체 패턴 요약 생성
+    console.log(`5단계: Stage 3 - FBI 프로파일러 전체 요약 생성 중...`);
     const geminiSummary = await summarizeWithGemini(mergedFilter, relationshipText);
     
     // 응답 검증 (high_indices와 medium_sample 모두 확인)
@@ -335,11 +340,11 @@ async function processAnalysis(
     console.log(`  - MEDIUM 샘플: ${geminiSummary.medium_sample.length}개 (검증 후)`);
     
     // Rate Limit 방지: Gemini 요약 후 60초 대기
-    console.log(`⏳ Gemini 분석 완료. Claude 심층 분석 준비를 위해 60초 대기 중...`);
+    console.log(`⏳ Stage 3 완료. Claude 심층 분석 준비를 위해 60초 대기 중...`);
     await new Promise(resolve => setTimeout(resolve, 60000));
 
-    // 5. HIGH 원문 추출 및 배치 분할 (모두 분석하기)
-    console.log(`5단계: HIGH 원문 추출 및 배치 분할 중...`);
+    // 6. HIGH 원문 추출 및 배치 분할 (모두 분석하기)
+    console.log(`6단계: HIGH 원문 추출 및 배치 분할 중...`);
     
     // HIGH 메시지 전체 추출
     const allHighMessages = geminiSummary.high_indices
@@ -423,7 +428,7 @@ async function processAnalysis(
     console.log(`✓ MEDIUM 샘플 ${mediumSamples.length}개 추출 완료 (첫 배치에 포함, 예산 ${mediumBudget.toLocaleString()} 토큰 남음)`);
 
     // 6. 배치별 Claude 심층 분석 (진행률 표시)
-    console.log(`6단계: Claude 심층 분석 시작 (총 ${highBatches.length}개 배치)`);
+    console.log(`7단계: Stage 4 - Claude 심층 분석 시작 (총 ${highBatches.length}개 배치)`);
     
     const participants = Array.from(new Set(parsed.messages.map(m => m.participant)));
     const firstDate = parsed.messages[0]?.timestamp || '';
@@ -552,7 +557,7 @@ ${batchNum === 1 ? '3. MEDIUM 샘플: 일상적이지만 의미 있는 대화들
     }
 
     // 8. Claude 결과를 storage 형식으로 변환
-    console.log(`8단계: 결과 변환 및 저장 중...`);
+    console.log(`8단계: Stage 4 결과 변환 및 저장 중...`);
     
     // practicalAdvice를 insights 형식으로 변환 (null guard 추가)
     const immediateActions = Array.isArray(claudeResult.analysis.practicalAdvice?.immediateActions) 
@@ -607,7 +612,7 @@ ${batchNum === 1 ? '3. MEDIUM 샘플: 일상적이지만 의미 있는 대화들
     console.log("✅ Stage 4 완료: Claude 심층 분석 저장\n");
 
     // 9. Stage 5: Tea Coach 보고서 생성
-    console.log(`9단계: Tea Coach 보고서 생성 중...`);
+    console.log(`9단계: Stage 5 - Tea Coach 보고서 생성 중...`);
     
     try {
       // 메시지 샘플 준비 (최근 100개)
