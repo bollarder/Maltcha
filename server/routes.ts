@@ -528,10 +528,10 @@ ${batchNum === 1 ? '3. MEDIUM 샘플: 일상적이지만 의미 있는 대화들
       
       console.log(`✓ 배치 ${batchNum}/${totalBatches} 분석 완료`);
       
-      // 마지막 배치가 아니면 60초 대기 (rate limit)
+      // 마지막 배치가 아니면 5초 대기 (rate limit)
       if (i < highBatches.length - 1) {
-        console.log(`⏳ Rate limit 방지를 위해 60초 대기 중...`);
-        await new Promise(resolve => setTimeout(resolve, 60000));
+        console.log(`⏳ Rate limit 방지를 위해 5초 대기 중...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
       }
     }
     

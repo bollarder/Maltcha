@@ -97,10 +97,11 @@ export interface ClaudeAnalysisResult {
 }
 
 /**
- * Claude 심층 분석 수행
+ * Claude 심층 분석 수행 (재시도 로직 포함)
  */
 export async function performClaudeDeepAnalysis(
-  input: ClaudeInputPackage
+  input: ClaudeInputPackage,
+  maxRetries: number = 3
 ): Promise<ClaudeAnalysisResult> {
   const startTime = Date.now();
 
@@ -117,31 +118,86 @@ export async function performClaudeDeepAnalysis(
   // Claude API용 메시지 형식으로 변환
   const userContent = formatUserContent(input);
 
-  try {
-    // Claude API 호출 (단일 호출로 전체 분석)
-    console.log('🤖 Claude API 호출 중...');
-    
-    const response = await anthropic.messages.create({
-      model: CLAUDE_MODEL,
-      max_tokens: 16000, // 9,500 토큰 목표, 여유있게 16K 설정
-      temperature: 0.7,
-      system: input.systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: userContent,
-        },
-      ],
-    });
+  // 재시도 로직
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      // Claude API 호출 (단일 호출로 전체 분석)
+      if (attempt > 1) {
+        console.log(`🔄 재시도 ${attempt}/${maxRetries}...`);
+      } else {
+        console.log('🤖 Claude API 호출 중...');
+      }
+      
+      const response = await anthropic.messages.create({
+        model: CLAUDE_MODEL,
+        max_tokens: 16000, // 9,500 토큰 목표, 여유있게 16K 설정
+        temperature: 0.7,
+        system: input.systemPrompt,
+        messages: [
+          {
+            role: 'user',
+            content: userContent,
+          },
+        ],
+      });
 
-    console.log('✅ Claude 응답 수신');
+      console.log('✅ Claude 응답 수신');
 
-    // 응답 안전하게 추출
-    const content = response.content;
-    if (!Array.isArray(content) || content.length === 0) {
-      console.warn('⚠️  Claude 응답에 content가 없음');
-      const analysis = createFallbackAnalysis('Claude 응답을 받지 못했습니다.');
+      // 응답 안전하게 추출
+      const content = response.content;
+      if (!Array.isArray(content) || content.length === 0) {
+        console.warn('⚠️  Claude 응답에 content가 없음');
+        const analysis = createFallbackAnalysis('Claude 응답을 받지 못했습니다.');
+        const processingTime = Date.now() - startTime;
+        const analyzedMessages = input.relationshipContext?.statistics?.totalMessages || 0;
+
+        return {
+          analysis,
+          metadata: {
+            analyzedMessages,
+            highPriorityCount: highCount,
+            mediumSampleCount: mediumCount,
+            analysisDepth: 'failed',
+            processingTime,
+          },
+        };
+      }
+
+      // 모든 text 세그먼트 수집
+      const textSegments = content
+        .filter(block => block.type === 'text')
+        .map(block => block.text)
+        .filter(text => text && text.length > 0);
+
+      if (textSegments.length === 0) {
+        console.warn('⚠️  Claude 응답에 text 세그먼트가 없음');
+        const analysis = createFallbackAnalysis('Claude 응답에 텍스트가 포함되지 않았습니다.');
+        const processingTime = Date.now() - startTime;
+        const analyzedMessages = input.relationshipContext?.statistics?.totalMessages || 0;
+
+        return {
+          analysis,
+          metadata: {
+            analyzedMessages,
+            highPriorityCount: highCount,
+            mediumSampleCount: mediumCount,
+            analysisDepth: 'partial',
+            processingTime,
+          },
+        };
+      }
+
+      // 모든 텍스트 세그먼트 결합
+      const analysisText = textSegments.join('\n\n');
+
+      const analysis = parseClaudeResponse(analysisText);
+
       const processingTime = Date.now() - startTime;
+
+      console.log(`⏱️  처리 시간: ${(processingTime / 1000).toFixed(1)}초`);
+      console.log('=== Claude 심층 분석 완료 ===\n');
+
+      // 안전한 메타데이터 생성
       const analyzedMessages = input.relationshipContext?.statistics?.totalMessages || 0;
 
       return {
@@ -150,65 +206,35 @@ export async function performClaudeDeepAnalysis(
           analyzedMessages,
           highPriorityCount: highCount,
           mediumSampleCount: mediumCount,
-          analysisDepth: 'failed',
+          analysisDepth: 'comprehensive',
           processingTime,
         },
       };
+    } catch (error: any) {
+      // Rate limit 에러 처리
+      if (error.status === 429 && attempt < maxRetries) {
+        const retryAfter = parseInt(error.headers?.['retry-after'] || '5');
+        console.log(`⚠️  Rate limit 도달. ${retryAfter}초 후 재시도 (${attempt}/${maxRetries})...`);
+        await new Promise(resolve => setTimeout(resolve, retryAfter * 1000));
+        continue;
+      }
+      
+      // 마지막 시도이거나 다른 에러인 경우
+      if (attempt === maxRetries) {
+        console.error('❌ Claude 분석 실패 (모든 재시도 소진):', error);
+        throw new Error(
+          `Claude 분석 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
+        );
+      }
+      
+      // 일반 에러 - 짧은 대기 후 재시도
+      console.log(`⚠️  에러 발생. 3초 후 재시도 (${attempt}/${maxRetries})...`);
+      await new Promise(resolve => setTimeout(resolve, 3000));
     }
-
-    // 모든 text 세그먼트 수집
-    const textSegments = content
-      .filter(block => block.type === 'text')
-      .map(block => block.text)
-      .filter(text => text && text.length > 0);
-
-    if (textSegments.length === 0) {
-      console.warn('⚠️  Claude 응답에 text 세그먼트가 없음');
-      const analysis = createFallbackAnalysis('Claude 응답에 텍스트가 포함되지 않았습니다.');
-      const processingTime = Date.now() - startTime;
-      const analyzedMessages = input.relationshipContext?.statistics?.totalMessages || 0;
-
-      return {
-        analysis,
-        metadata: {
-          analyzedMessages,
-          highPriorityCount: highCount,
-          mediumSampleCount: mediumCount,
-          analysisDepth: 'partial',
-          processingTime,
-        },
-      };
-    }
-
-    // 모든 텍스트 세그먼트 결합
-    const analysisText = textSegments.join('\n\n');
-
-    const analysis = parseClaudeResponse(analysisText);
-
-    const processingTime = Date.now() - startTime;
-
-    console.log(`⏱️  처리 시간: ${(processingTime / 1000).toFixed(1)}초`);
-    console.log('=== Claude 심층 분석 완료 ===\n');
-
-    // 안전한 메타데이터 생성
-    const analyzedMessages = input.relationshipContext?.statistics?.totalMessages || 0;
-
-    return {
-      analysis,
-      metadata: {
-        analyzedMessages,
-        highPriorityCount: highCount,
-        mediumSampleCount: mediumCount,
-        analysisDepth: 'comprehensive',
-        processingTime,
-      },
-    };
-  } catch (error) {
-    console.error('❌ Claude 분석 실패:', error);
-    throw new Error(
-      `Claude 분석 중 오류가 발생했습니다: ${error instanceof Error ? error.message : '알 수 없는 오류'}`
-    );
   }
+
+  // 여기 도달하면 모든 재시도 실패
+  throw new Error('Claude 분석 실패: 모든 재시도 소진');
 }
 
 /**
