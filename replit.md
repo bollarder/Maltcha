@@ -31,6 +31,8 @@ Preferred communication style: Simple, everyday language.
 
 **Asynchronous Processing**: Analysis operations run asynchronously, with the client polling for completion to handle long-running AI tasks without blocking.
 
+**Rate Limit Management**: A 90-second delay is implemented between Stage 4 (Claude Therapist) and Stage 5 (Tea Coach) to prevent API rate limit errors and ensure stable processing of large conversation datasets.
+
 **Error Handling**: Robust error handling is implemented for AI responses, rate limits, and data validation, ensuring analysis completion and preventing partial data persistence.
 
 ### Data Storage Solutions

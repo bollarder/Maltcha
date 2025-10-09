@@ -636,9 +636,9 @@ ${batchNum === 1 ? '3. MEDIUM 샘플: 일상적이지만 의미 있는 대화들
         },
       };
 
-      // Rate Limit 방지: Claude Stage 4 후 60초 대기
-      console.log(`⏳ Stage 4 완료. Stage 5 Tea Coach 준비를 위해 60초 대기 중...`);
-      await new Promise(resolve => setTimeout(resolve, 60000));
+      // Rate Limit 방지: Claude Stage 4 후 90초 대기
+      console.log(`⏳ Stage 4 완료. Stage 5 Tea Coach 준비를 위해 90초 대기 중...`);
+      await new Promise(resolve => setTimeout(resolve, 90000));
 
       const teaReport = await generateTeaCoachReport(teaInput);
 
