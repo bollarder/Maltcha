@@ -35,56 +35,153 @@ export interface SummaryResult {
 }
 
 /**
- * Gemini 요약 프롬프트 생성 (원문 제외, 인덱스와 메타데이터만)
+ * Gemini 요약 프롬프트 생성 (FBI 프로파일러 버전)
  */
 function createSummaryPrompt(
   highMessages: FilteredMessage[],
   mediumMessages: FilteredMessage[],
-  relationshipType: string
+  relationshipType: string,
+  userGoal: string = '관계 분석'
 ): string {
-  return `당신은 대화 분석 전문가입니다.
-관계 유형: ${relationshipType}
+  // 사용자 이름 추출 (첫 번째 메시지부터)
+  const users = [...new Set([...highMessages, ...mediumMessages].map(m => m.user))];
+  const userName = users[0] || 'User1';
+  const partnerName = users[1] || 'User2';
+  
+  const criticalCount = highMessages.length;
+  const mediumCount = mediumMessages.length;
+  const totalMessages = criticalCount + mediumCount;
 
-아래는 ${highMessages.length + mediumMessages.length}개의 중요 메시지 필터링 결과입니다.
-(원문은 제외, 인덱스와 분석 이유만 제공)
+  return `# 🕵️ FBI 프로파일링 프로토콜
 
-HIGH 메시지 (${highMessages.length}개):
-${highMessages.map(m => `[${m.index}] ${m.date} - ${m.user} - 이유: ${m.reason}`).join('\n')}
+당신은 FBI 행동분석팀(BAU) 프로파일러입니다.
+경력 15년, 200건 이상 복잡한 사건 프로파일링.
 
-MEDIUM 메시지 (${mediumMessages.length}개) - 샘플 500개:
-${mediumMessages.slice(0, 500).map(m => `[${m.index}] ${m.date} - ${m.user} - 이유: ${m.reason}`).join('\n')}
-${mediumMessages.length > 500 ? `... 외 ${mediumMessages.length - 500}개` : ''}
+## 임무
 
-위 메타데이터(인덱스, 날짜, 사용자, 이유)만으로 다음을 분석하여 JSON으로 출력하세요:
+증거 수집관이 분류한 증거를 분석하여
+관계의 프로파일을 작성하세요.
 
-1. timeline: 전체 타임라인 분석 (주요 시기별 5-8개 이벤트)
-2. turning_points: 관계 전환점 5-10개 (HIGH 메시지 중심, 인덱스 포함)
-3. high_indices: 모든 HIGH 메시지 인덱스 배열
-4. medium_sample: MEDIUM 중 대표 샘플 500개 (인덱스, 날짜, 카테고리)
-5. statistics: 통계 및 핵심 주제
+---
 
-JSON 형식:
+## 입력 데이터
+
+### 증거 메타데이터 (원문 제외)
+
+**CRITICAL 증거: ${criticalCount}개**
+${highMessages.map(m => `[${m.index}] ${m.date} | ${m.user} | 이유: ${m.reason}`).join('\n')}
+
+**MEDIUM 증거: ${mediumCount}개 (샘플 500개)**
+${mediumMessages.slice(0, 500).map(m => `[${m.index}] ${m.date} | ${m.user} | 이유: ${m.reason}`).join('\n')}
+${mediumMessages.length > 500 ? `\n... 외 ${mediumMessages.length - 500}개` : ''}
+
+**통계:**
+- 총 메시지: ${totalMessages}
+- 관계: ${relationshipType}
+- 목적: ${userGoal}
+- 참여자: ${userName}, ${partnerName}
+
+**중요: 원문 없이 메타데이터만으로 분석**
+
+---
+
+## FBI 프로파일링 6단계
+
+### Stage 1: 증거 검토
+- CRITICAL ${criticalCount}개 전체 검토
+- MEDIUM 중 대표 샘플 500개 선별
+- 시간순 정렬
+
+### Stage 2: 범죄 분류
+**MO (Modus Operandi) - 소통 방식**: 어떻게 대화하는가?
+**Signature - 고유 패턴**: 왜 그렇게 하는가? 변하지 않는 것
+
+### Stage 3: 타임라인 재구성
+**Phase 1 (초기)**: 첫 1/3 기간 분석
+**Phase 2 (중기)**: 중간 1/3 기간, 전환점 파악
+**Phase 3 (최근)**: 마지막 1/3 기간, 현재 상태
+
+### Stage 4: 피해자학
+${partnerName} 분석: 니즈, 트리거, 회피 패턴
+
+### Stage 5: 행동 증거 분석
+패턴 발견 (최소 5개, 3회 이상 출현)
+
+### Stage 6: 프로파일 생성
+관계 유형, 건강도 점수, 전환점, 심층 분석 대상
+
+---
+
+## 출력 형식 (간소화)
+
+\`\`\`json
 {
   "timeline": [
-    {"date": "2024-01", "description": "관계 시작기", "significance": "설렘과 호기심"}
+    {
+      "date": "2024-01",
+      "description": "관계 시작기",
+      "significance": "설렘과 호기심"
+    }
   ],
   "turning_points": [
-    {"index": 1234, "date": "2024-03-15", "description": "첫 갈등", "impact": "관계 재정립"}
+    {
+      "index": 145,
+      "date": "2024-03-15",
+      "description": "첫 갈등 발생",
+      "impact": "관계 재정립"
+    }
   ],
-  "high_indices": [1234, 5678, ...],
+  "high_indices": [${highMessages.map(m => m.index).join(', ')}],
   "medium_sample": [
-    {"index": 2345, "date": "2024-02-10", "category": "일상 공유"}
+    {
+      "index": 67,
+      "date": "2024-02-10",
+      "category": "일상 공유"
+    }
   ],
   "statistics": {
-    "total_analyzed": ${highMessages.length + mediumMessages.length},
-    "high_count": ${highMessages.length},
-    "medium_count": ${mediumMessages.length},
-    "relationship_health": "건강함/주의/위험",
-    "key_themes": ["주제1", "주제2", ...]
+    "total_analyzed": ${totalMessages},
+    "high_count": ${criticalCount},
+    "medium_count": ${mediumCount},
+    "relationship_health": "건강함/보통/주의/위험",
+    "key_themes": ["주제1", "주제2", "주제3"]
   }
 }
+\`\`\`
 
-중요: 원문은 포함하지 말고 인덱스만 전달하세요!`;
+---
+
+## FBI 프로파일링 원칙
+
+**1. 증거만 말한다**
+- 메타데이터에 없으면 추측 금지
+- 인덱스와 이유가 전부
+
+**2. 패턴 = 3회 이상**
+- 1-2회는 "가능성"
+- 3회 이상만 확정 패턴
+
+**3. 타임라인이 핵심**
+- 시간 흐름이 진실
+- 초기-중기-최근 비교 필수
+
+**4. 수치로 증명**
+- 추상적 표현 금지
+- 구체적 숫자 제시
+
+---
+
+## 체크리스트
+
+- [ ] timeline: 전체 타임라인 5-8개 이벤트
+- [ ] turning_points: 관계 전환점 5-10개 (인덱스 포함)
+- [ ] high_indices: 모든 CRITICAL 인덱스 배열
+- [ ] medium_sample: MEDIUM 대표 샘플 500개
+- [ ] statistics: 건강도, 핵심 주제
+
+---
+
+이제 프로파일링을 시작하세요. 정확한 JSON으로 출력하세요.`;
 }
 
 /**
@@ -92,7 +189,8 @@ JSON 형식:
  */
 export async function summarizeWithGemini(
   filterResult: FilterResult,
-  relationshipType: string
+  relationshipType: string,
+  userGoal: string = '관계 분석'
 ): Promise<SummaryResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   
@@ -106,7 +204,8 @@ export async function summarizeWithGemini(
   const prompt = createSummaryPrompt(
     filterResult.high,
     filterResult.medium,
-    relationshipType
+    relationshipType,
+    userGoal
   );
 
   let lastError: Error | null = null;
@@ -194,12 +293,13 @@ export async function summarizeWithGemini(
  */
 export async function processSummaryRequest(
   filterResult: FilterResult,
-  relationshipType: string
+  relationshipType: string,
+  userGoal: string = '관계 분석'
 ): Promise<SummaryResult> {
   console.log(`Processing summary for ${filterResult.stats.total} filtered messages...`);
   
   // Gemini API 1회 호출
-  const summary = await summarizeWithGemini(filterResult, relationshipType);
+  const summary = await summarizeWithGemini(filterResult, relationshipType, userGoal);
   
   console.log(`Summary generated: ${summary.timeline.length} timeline events, ${summary.turning_points.length} turning points`);
   

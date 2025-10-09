@@ -75,7 +75,7 @@ export function registerRoutes(app: Express): Server {
   // Gemini 최종 요약 API
   app.post("/api/summarize", async (req, res) => {
     try {
-      const { filterResult, relationshipType = "친구" } = req.body;
+      const { filterResult, relationshipType = "친구", userGoal = "관계 분석" } = req.body;
 
       if (!filterResult) {
         return res.status(400).json({ message: "No filter result provided" });
@@ -84,7 +84,7 @@ export function registerRoutes(app: Express): Server {
       console.log(`Received filter result: ${filterResult.stats?.total || 0} messages`);
 
       // Gemini API로 요약 생성 (서버 메모리에서만 처리)
-      const summary = await processSummaryRequest(filterResult, relationshipType);
+      const summary = await processSummaryRequest(filterResult, relationshipType, userGoal);
 
       // 결과 반환 후 서버 메모리 자동 해제
       res.json(summary);
