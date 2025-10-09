@@ -11,6 +11,7 @@ import {
   CheckCircle,
   MessageSquare,
   Activity,
+  Coffee,
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -120,7 +121,7 @@ export default function Results() {
     );
   }
 
-  const { insights, deepAnalysis, stage2Data } = analysis;
+  const { insights, deepAnalysis, stage2Data, teaCoachReport } = analysis;
 
   if (!insights || insights.length === 0) {
     return (
@@ -681,6 +682,65 @@ export default function Results() {
             ))}
           </div>
         </div>
+
+        {/* Tea Coach 실전 조언 */}
+        {teaCoachReport && teaCoachReport.insights && teaCoachReport.insights.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-bold text-foreground mb-6 flex items-center fade-in-up">
+              <Coffee className="w-6 h-6 mr-2 text-primary" />
+              Tea 코치의 실전 조언
+            </h2>
+
+            <div className="bg-gradient-to-br from-primary/5 to-secondary/5 rounded-2xl p-6 mb-6 fade-in-up">
+              <p className="text-sm text-muted-foreground mb-2">
+                AI 관계 코치 "Tea"가 분석한 실천 가능한 조언입니다
+              </p>
+              {teaCoachReport.metadata && (
+                <div className="flex gap-4 text-xs text-muted-foreground">
+                  <span>📊 인사이트: {teaCoachReport.metadata.total_insights}개</span>
+                  <span>📝 분석 깊이: {teaCoachReport.metadata.total_words}자</span>
+                  <span>🎯 실행 가능성: {teaCoachReport.metadata.actionability}</span>
+                </div>
+              )}
+            </div>
+
+            <div className="space-y-4">
+              {teaCoachReport.insights.map((insight: any, index: number) => (
+                <div
+                  key={insight.id || index}
+                  className="bg-card dark:bg-card rounded-xl shadow-lg p-6 fade-in-up border-l-4 border-primary"
+                  data-testid={`tea-insight-card-${index}`}
+                  style={{ animationDelay: `${index * 0.05}s` }}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-gradient-to-br from-primary to-secondary rounded-lg flex items-center justify-center flex-shrink-0">
+                      <span className="text-lg font-bold text-primary-foreground">
+                        {insight.id || index + 1}
+                      </span>
+                    </div>
+                    <div className="flex-1">
+                      <h3 className="text-lg font-semibold text-foreground mb-3">
+                        {insight.title}
+                      </h3>
+                      <p className="text-foreground whitespace-pre-wrap leading-relaxed mb-4">
+                        {insight.description}
+                      </p>
+                      {insight.evidence_used && insight.evidence_used.length > 0 && (
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>📎 증거 인용:</span>
+                          <span>{insight.evidence_used.length}개 메시지</span>
+                          {insight.word_count && (
+                            <span className="ml-2">• {insight.word_count}자</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Action Buttons - 최하단 배치 */}
         <div className="mt-8 flex flex-col sm:flex-row gap-4 justify-center fade-in-up">
