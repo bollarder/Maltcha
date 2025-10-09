@@ -316,7 +316,12 @@ async function processAnalysis(
 
     // 5. Gemini로 전체 패턴 요약 생성
     console.log(`5단계: Stage 3 - FBI 프로파일러 전체 요약 생성 중...`);
-    const geminiSummary = await summarizeWithGemini(mergedFilter, relationshipText);
+    const geminiSummary = await summarizeWithGemini(
+      mergedFilter, 
+      relationshipText,
+      userPurpose || '관계 분석',
+      batchSummaries
+    );
     
     // 응답 검증 (high_indices와 medium_sample 모두 확인)
     if (!geminiSummary || !Array.isArray(geminiSummary.high_indices)) {

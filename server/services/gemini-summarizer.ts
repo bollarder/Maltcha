@@ -35,16 +35,18 @@ export interface SummaryResult {
 }
 
 /**
- * Gemini 요약 프롬프트 생성 (FBI 프로파일러 버전)
+ * Gemini 요약 프롬프트 생성 (FBI 프로파일러 버전 - Stage 3)
  */
 function createSummaryPrompt(
   highMessages: FilteredMessage[],
   mediumMessages: FilteredMessage[],
   relationshipType: string,
-  userGoal: string = '관계 분석'
+  userGoal: string = '관계 분석',
+  batchSummaries?: any[]
 ): string {
   // 사용자 이름 추출 (첫 번째 메시지부터)
-  const users = [...new Set([...highMessages, ...mediumMessages].map(m => m.user))];
+  const userSet = new Set([...highMessages, ...mediumMessages].map(m => m.user));
+  const users = Array.from(userSet);
   const userName = users[0] || 'User1';
   const partnerName = users[1] || 'User2';
   
@@ -52,7 +54,26 @@ function createSummaryPrompt(
   const mediumCount = mediumMessages.length;
   const totalMessages = criticalCount + mediumCount;
 
-  return `# 🕵️ FBI 프로파일링 프로토콜
+  const batchSummarySection = batchSummaries && batchSummaries.length > 0 ? `
+
+## 📦 Stage 2 배치 요약 (증거 정리관 보고서)
+
+증거 정리 전문가가 이미 각 배치를 500토큰 이내로 압축했습니다.
+아래는 **전체 ${batchSummaries.length}개 배치의 핵심 패턴 요약**입니다.
+
+${batchSummaries.map(batch => `
+### Batch ${batch.batch_id} (${batch.period})
+- **Message Range**: ${batch.message_range}
+- **특징**: ${batch.batch_characteristics}
+- **주요 패턴**: ${batch.critical_summary.pattern_groups.map((p: any) => p.pattern).join(', ')}
+- **핵심 이벤트**: ${batch.critical_summary.top_events.map((e: any) => `[${e.index}] ${e.brief}`).join('; ')}
+- **주요 테마**: ${batch.medium_summary.themes.join(', ')}
+`).join('\n')}
+
+**이 배치 요약을 참고하여 전체 프로파일을 작성하세요.**
+` : '';
+
+  return `# 🕵️ FBI 프로파일링 프로토콜 (Stage 3)
 
 당신은 FBI 행동분석팀(BAU) 프로파일러입니다.
 경력 15년, 200건 이상 복잡한 사건 프로파일링.
@@ -65,6 +86,7 @@ function createSummaryPrompt(
 ---
 
 ## 입력 데이터
+${batchSummarySection}
 
 ### 증거 메타데이터 (원문 제외)
 
@@ -185,12 +207,13 @@ ${partnerName} 분석: 니즈, 트리거, 회피 패턴
 }
 
 /**
- * Gemini API로 최종 요약 생성
+ * Gemini API로 최종 요약 생성 (Stage 3)
  */
 export async function summarizeWithGemini(
   filterResult: FilterResult,
   relationshipType: string,
-  userGoal: string = '관계 분석'
+  userGoal: string = '관계 분석',
+  batchSummaries?: any[]
 ): Promise<SummaryResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   
@@ -205,7 +228,8 @@ export async function summarizeWithGemini(
     filterResult.high,
     filterResult.medium,
     relationshipType,
-    userGoal
+    userGoal,
+    batchSummaries
   );
 
   let lastError: Error | null = null;
