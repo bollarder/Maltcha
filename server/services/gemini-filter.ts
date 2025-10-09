@@ -24,33 +24,185 @@ export interface FilterResult {
 }
 
 /**
- * 필터링 프롬프트 생성
+ * 필터링 프롬프트 생성 (FBI 증거 수집관 버전)
  */
 export function createFilterPrompt(
   batch: Message[],
   relationshipType: string,
-  analysisPurpose: string
+  analysisPurpose: string,
+  batchNumber: number = 1,
+  totalBatches: number = 1
 ): string {
-  return `당신은 대화 분석 전문가입니다.
-관계 유형: ${relationshipType}
-분석 목적: ${analysisPurpose}
-아래 ${batch.length}개 메시지에서 중요도를 판단하세요:
+  const startIndex = batch.length > 0 ? batch[0].index : 0;
+  const endIndex = batch.length > 0 ? batch[batch.length - 1].index : 0;
+  
+  return `# 🔍 FBI 증거 수집 프로토콜
 
-HIGH: 관계 전환점, 갈등, 중요 의사결정, 감정 변화
-MEDIUM: 의미있는 대화, 계획, 중요 일상
-LOW: 단순 인사, 반응 (ㅋㅋ, ㅇㅇ 등 - 개수만 세고 저장 안함)
+당신은 FBI 범죄 현장 조사관(CSI)입니다.
+경력 12년, 5,000건 이상의 현장 증거 수집 경험.
 
-JSON 형식으로 출력:
+## 임무
+
+대화 = 범죄 현장
+메시지 = 증거
+목표: 관계 분석에 필요한 증거를 등급별로 분류
+
+---
+
+## 배치 정보
+
+- 배치: ${batchNumber}/${totalBatches}
+- 범위: #${startIndex} ~ #${endIndex}
+- 개수: ${batch.length}개
+- 관계: ${relationshipType}
+- 목적: ${analysisPurpose}
+
+---
+
+## 증거 분류 기준
+
+### 🔴 CRITICAL (결정적 증거)
+
+"이것 없이는 관계 분석 불가"
+
+**1. 관계 전환점**
+- 호칭 변화 ("너" ↔ "OOO씨")
+- 관계 정의 ("우리 사귀는 거야?")
+- 고백/거절 ("사랑해", "미안해")
+
+**2. 갈등/해소**
+- 갈등 발생 ("진짜 화났어")
+- 갈등 고조 ("너무해")
+- 화해 시도 ("미안해")
+
+**3. 감정 폭발**
+- 분노 ("열받아")
+- 슬픔 ("너무 속상해")
+- 기쁨 ("너무 행복해!")
+
+**4. 취약성 노출**
+- 비밀 공유 ("아무한테도 안 말했는데")
+- 고민 ("사실 나 요즘...")
+- 도움 요청 ("도와줄 수 있어?")
+
+**5. 경계선**
+- 경계 설정 ("이건 좀 아닌 것 같아")
+- 거절 ("미안, 그건 못해")
+- 압박 ("왜 안 해줘?")
+
+---
+
+### 🟡 MEDIUM (관련 증거)
+
+"맥락과 패턴 이해에 필요"
+
+**1. 의미있는 일상**
+- 하루 공유 ("오늘 이런 일 있었어")
+- 감정 공유 ("기분 좋아")
+
+**2. 미래 계획**
+- 약속 ("다음 주에 볼까?")
+- 여행 ("여름에 어디 갈까?")
+
+**3. 관심사**
+- 취향 ("나 이거 좋아해")
+- 의견 ("너는 어떻게 생각해?")
+
+**4. 배려/지지**
+- 챙기기 ("밥 먹었어?")
+- 응원 ("할 수 있어!")
+- 감사 ("고마워")
+
+**5. 농담/장난**
+- 티키타카
+- 놀리기
+- 밈 교환
+
+---
+
+### ⚪ LOW (배경 소음)
+
+"개수만 카운트, 저장 안 함"
+
+**1. 형식적 인사**
+- "좋은 아침", "안녕", "잘자"
+
+**2. 단순 반응**
+- "ㅋㅋ", "ㅎㅎ", "ㅇㅇ"
+- 이모티콘/스티커만
+
+**3. 중복 루틴**
+- 매일 같은 인사
+- "뭐해?", "먹었어?"
+
+---
+
+## 출력 형식
+
+\`\`\`json
 {
-  "high": [
-    {"index": 0, "date": "...", "user": "...", "message": "...", "reason": "관계 갈등 폭발"}
+  "critical": [
+    {
+      "index": 145,
+      "date": "2024-03-15 14:30",
+      "user": "userA",
+      "message": "전체 메시지 원문",
+      "reason": "갈등 표출 - 감정 폭발, 관계 직접 영향"
+    }
   ],
-  "medium": [...],
-  "stats": {"total": ${batch.length}, "high": 0, "medium": 0, "low": 0}
+  "medium": [
+    {
+      "index": 67,
+      "date": "2024-03-10 09:15",
+      "user": "userB",
+      "message": "전체 메시지 원문",
+      "reason": "미래 계획 - 함께하는 시간"
+    }
+  ],
+  "stats": {
+    "total": ${batch.length},
+    "high": 0,
+    "medium": 0,
+    "low": 0
+  }
 }
+\`\`\`
+
+---
+
+## FBI 원칙
+
+**1. 증거를 놓치지 마라**
+- 애매하면 MEDIUM으로
+- 중요할 것 같으면 올려서 분류
+- "덜 중요한 것 포함" > "중요한 것 놓침"
+
+**2. 오염된 증거는 쓸모없다**
+- 명확한 기준으로만
+- 이유는 구체적으로 (30자+)
+
+**3. 증거 연쇄 보관**
+- 인덱스 정확히
+- 타임스탬프 정확히
+- 원문 전체 포함
+
+**4. 맥락이 핵심**
+- 전후 메시지 고려
+- 대화 흐름 속에서 판단
+
+---
+
+## 특별 지시
+
+1. **원문 보존**: 전체 메시지 포함, 이모티콘·특수문자 포함
+2. **한국어 특성**: "ㅋㅋ"는 진짜 웃음 vs 어색함 구분, "..."는 말줄임 vs 불편함, 반말/존댓말은 관계 변화 신호
+
+---
 
 메시지:
-${batch.map(m => `${m.index}. [${m.date}] ${m.user}: ${m.message}`).join('\n')}`;
+${batch.map(m => `${m.index}. [${m.date}] ${m.user}: ${m.message}`).join('\n')}
+
+이제 배치 #${batchNumber} 메시지를 분류하세요. 정확한 JSON으로 출력하세요.`;
 }
 
 /**
@@ -59,7 +211,9 @@ ${batch.map(m => `${m.index}. [${m.date}] ${m.user}: ${m.message}`).join('\n')}`
 export async function filterBatch(
   batch: Message[],
   relationshipType: string,
-  analysisPurpose: string
+  analysisPurpose: string,
+  batchNumber: number = 1,
+  totalBatches: number = 1
 ): Promise<FilterResult> {
   const apiKey = process.env.GEMINI_API_KEY;
   
@@ -70,7 +224,7 @@ export async function filterBatch(
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 
-  const prompt = createFilterPrompt(batch, relationshipType, analysisPurpose);
+  const prompt = createFilterPrompt(batch, relationshipType, analysisPurpose, batchNumber, totalBatches);
 
   let lastError: Error | null = null;
   
@@ -91,14 +245,25 @@ export async function filterBatch(
 
       const parsed = JSON.parse(jsonText);
 
-      // FilteredMessage 형식으로 변환 (importance 필드 추가)
-      const high: FilteredMessage[] = (parsed.high || []).map((item: any) => ({
-        ...item,
+      // FilteredMessage 형식으로 변환 (critical → high 매핑)
+      const criticalArray = parsed.critical || parsed.high || [];
+      const mediumArray = parsed.medium || [];
+      
+      const high: FilteredMessage[] = criticalArray.map((item: any) => ({
+        index: item.index,
+        date: item.date,
+        user: item.user,
+        message: item.message,
+        reason: item.reason || item.classification_reason || '',
         importance: 'HIGH' as const,
       }));
 
-      const medium: FilteredMessage[] = (parsed.medium || []).map((item: any) => ({
-        ...item,
+      const medium: FilteredMessage[] = mediumArray.map((item: any) => ({
+        index: item.index,
+        date: item.date,
+        user: item.user,
+        message: item.message,
+        reason: item.reason || item.classification_reason || '',
         importance: 'MEDIUM' as const,
       }));
 
@@ -155,15 +320,17 @@ export async function processBatches(
   onProgress?: (current: number, total: number) => void
 ): Promise<FilterResult[]> {
   const results: FilterResult[] = [];
+  const totalBatches = batches.length;
 
   for (let i = 0; i < batches.length; i++) {
     const batch = batches[i];
+    const batchNumber = i + 1;
     
     if (onProgress) {
-      onProgress(i + 1, batches.length);
+      onProgress(batchNumber, totalBatches);
     }
 
-    const result = await filterBatch(batch, relationshipType, analysisPurpose);
+    const result = await filterBatch(batch, relationshipType, analysisPurpose, batchNumber, totalBatches);
     results.push(result);
 
     // Rate Limit 방지를 위한 대기 (마지막 배치 제외)
