@@ -5,6 +5,7 @@ import { parseKakaoTalkFile, calculateStats, generateChartData } from "./service
 import { analyzeConversation } from "./services/anthropic";
 import { processSummaryRequest } from "./services/gemini-summarizer";
 import { performClaudeDeepAnalysis, type ClaudeInputPackage } from "./services/claude-deep-analysis";
+import { generateTeaCoachReport, type TeaCoachInput } from "./services/claude-coach-tea";
 import { processBatches, mergeFilterResults, type Message as FilterMessage } from "./services/gemini-filter";
 import { summarizeWithGemini } from "./services/gemini-summarizer";
 import { nanoid } from "nanoid";
@@ -154,6 +155,57 @@ export function registerRoutes(app: Express): Server {
       console.error("Claude analysis API error:", error);
       res.status(500).json({ 
         message: error.message || "Claude 분석 중 오류가 발생했습니다" 
+      });
+    }
+  });
+
+  // Stage 5: Tea Coach 보고서 생성 API
+  app.post("/api/analyze/tea", async (req, res) => {
+    try {
+      const teaInput: TeaCoachInput = req.body;
+
+      // 입력 검증
+      if (!teaInput || typeof teaInput !== 'object') {
+        return res.status(400).json({ message: "Invalid request body" });
+      }
+
+      if (!teaInput.fbiProfile || typeof teaInput.fbiProfile !== 'object') {
+        return res.status(400).json({ message: "Missing or invalid fbiProfile" });
+      }
+
+      if (!teaInput.therapistAnalysis || typeof teaInput.therapistAnalysis !== 'object') {
+        return res.status(400).json({ message: "Missing or invalid therapistAnalysis" });
+      }
+
+      if (!Array.isArray(teaInput.messageSamples)) {
+        return res.status(400).json({ message: "Missing or invalid messageSamples array" });
+      }
+
+      if (!teaInput.userName || !teaInput.partnerName) {
+        return res.status(400).json({ message: "Missing userName or partnerName" });
+      }
+
+      if (!teaInput.statistics || typeof teaInput.statistics !== 'object') {
+        return res.status(400).json({ message: "Missing or invalid statistics" });
+      }
+
+      console.log('\n☕ Tea 코치 보고서 요청 수신');
+      console.log(`- 사용자: ${teaInput.userName}`);
+      console.log(`- 상대방: ${teaInput.partnerName}`);
+      console.log(`- 메시지 샘플: ${teaInput.messageSamples.length}개`);
+      console.log(`- 전체 메시지: ${teaInput.statistics.totalMessages}개\n`);
+
+      // Tea Coach 보고서 생성 (서버 메모리에서만 처리)
+      const report = await generateTeaCoachReport(teaInput);
+
+      // 결과 반환 후 서버 메모리 자동 해제
+      res.json(report);
+
+      console.log('✅ Tea 코치 보고서 전송 완료\n');
+    } catch (error: any) {
+      console.error("Tea coach API error:", error);
+      res.status(500).json({ 
+        message: error.message || "Tea 코치 보고서 생성 중 오류가 발생했습니다" 
       });
     }
   });
