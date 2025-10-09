@@ -130,6 +130,8 @@ export const analysisResultSchema = z.object({
     .optional(),
   // 심층 분석 결과 (Claude 또는 Multi-turn)
   deepAnalysis: z.any().optional(),
+  // Stage 5: Tea Coach 보고서
+  teaCoachReport: z.any().optional(),
   error: z.string().optional(),
 });
 

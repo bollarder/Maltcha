@@ -604,7 +604,63 @@ ${batchNum === 1 ? '3. MEDIUM 샘플: 일상적이지만 의미 있는 대화들
       deepAnalysis: claudeResult.analysis, // Claude 전체 분석 저장
     });
 
-    console.log("========== Gemini + Claude 파이프라인 완료 ==========\n");
+    console.log("✅ Stage 4 완료: Claude 심층 분석 저장\n");
+
+    // 9. Stage 5: Tea Coach 보고서 생성
+    console.log(`9단계: Tea Coach 보고서 생성 중...`);
+    
+    try {
+      // 메시지 샘플 준비 (최근 100개)
+      const messageSamples = allHighMessages
+        .slice(-100)
+        .map(m => ({
+          index: m.index,
+          date: m.date,
+          user: m.user,
+          message: m.message,
+        }));
+
+      const teaInput: TeaCoachInput = {
+        fbiProfile: geminiSummary, // Stage 3: FBI Profiler 결과
+        therapistAnalysis: claudeResult.analysis, // Stage 4: Therapist 분석
+        messageSamples,
+        userName: participants[0] || "사용자",
+        partnerName: participants[1] || "상대방",
+        statistics: {
+          totalMessages: parsed.messages.length,
+          criticalCount: allHighMessages.length,
+          mediumCount: mediumSamples.length,
+          greenFlagCount: (geminiSummary as any).green_flags?.length || 0,
+          redFlagCount: (geminiSummary as any).red_flags?.length || 0,
+          healthScore: claudeResult.analysis.relationshipHealth?.healthScore || 5,
+        },
+      };
+
+      // Rate Limit 방지: Claude Stage 4 후 60초 대기
+      console.log(`⏳ Stage 4 완료. Stage 5 Tea Coach 준비를 위해 60초 대기 중...`);
+      await new Promise(resolve => setTimeout(resolve, 60000));
+
+      const teaReport = await generateTeaCoachReport(teaInput);
+
+      // Tea Coach 보고서 저장
+      await storage.updateAnalysis(analysisId, {
+        teaCoachReport: teaReport,
+      });
+
+      console.log(`✅ Stage 5 완료: Tea Coach 보고서 생성 및 저장`);
+      console.log(`   - 인사이트 수: ${teaReport.insights.length}개`);
+      console.log(`   - 총 단어 수: ${teaReport.metadata.total_words}자\n`);
+    } catch (error: any) {
+      console.error("⚠️  Stage 5 Tea Coach 생성 실패 (비필수):", error.message);
+      console.log("   분석은 Stage 4까지 완료되었습니다.\n");
+    }
+
+    console.log("========== 5단계 AI 파이프라인 완료 ==========");
+    console.log("Stage 1: FBI 증거 수집 (Gemini 2.5 Flash)");
+    console.log("Stage 3: FBI 프로파일러 (Gemini 2.5 Flash)");
+    console.log("Stage 4: 관계 심리치료사 (Claude Sonnet 4.5)");
+    console.log("Stage 5: 관계 코치 Tea (Claude Sonnet 4.5)");
+    console.log("==============================================\n");
     
   } catch (error) {
     // Gemini 파이프라인 실패 시 Claude-only로 fallback
