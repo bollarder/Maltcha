@@ -22,10 +22,12 @@ Preferred communication style: Simple, everyday language.
 
 **Runtime**: Node.js with TypeScript, using Express.js to serve API endpoints and static assets.
 
-**AI Pipeline**: A three-stage AI pipeline processes conversations:
+**AI Pipeline**: A five-stage AI pipeline processes conversations:
 1.  **FBI Evidence Collector (Gemini 2.5 Flash)**: Filters messages into CRITICAL/MEDIUM/LOW categories based on an FBI CSI framework, handling Korean language nuances.
-2.  **FBI Profiler (Gemini 2.5 Flash)**: Analyzes evidence metadata to create a relationship profile using a 6-stage profiling process, distinguishing MO from Signature and reconstructing timelines.
-3.  **Relationship Therapist (Claude Sonnet 4.5)**: Provides psychological interpretation of patterns discovered by the FBI Profiler using a 6-stage clinical assessment framework, requiring message citations for all insights.
+2.  **[Reserved]**: Placeholder for future implementation.
+3.  **FBI Profiler (Gemini 2.5 Flash)**: Analyzes evidence metadata to create a relationship profile using a 6-stage profiling process, distinguishing MO from Signature and reconstructing timelines.
+4.  **Relationship Therapist (Claude Sonnet 4.5)**: Provides psychological interpretation of patterns discovered by the FBI Profiler using a 6-stage clinical assessment framework, requiring message citations for all insights.
+5.  **Relationship Coach "Tea" (Claude Sonnet 4.5)**: Converts FBI profiles and therapist analysis into practical, immediately actionable advice with specific conversation scripts, 3-week action plans, and expected outcomes.
 
 **Asynchronous Processing**: Analysis operations run asynchronously, with the client polling for completion to handle long-running AI tasks without blocking.
 
