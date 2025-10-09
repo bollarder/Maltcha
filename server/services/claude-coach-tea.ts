@@ -316,8 +316,8 @@ ${input.statistics.greenFlagCount ? `- GREEN_FLAG: ${input.statistics.greenFlagC
 ${input.statistics.redFlagCount ? `- RED_FLAG: ${input.statistics.redFlagCount}개` : ''}
 ${input.statistics.healthScore ? `- 관계 건강도: ${input.statistics.healthScore}/10` : ''}
 
-## 참고 메시지 샘플 (최근 50개)
-${input.messageSamples.slice(0, 50).map(m => 
+## 참고 메시지 샘플 (최근 100개)
+${input.messageSamples.map(m => 
   `[${m.index}] ${m.date} | ${m.user}: ${m.message}`
 ).join('\n')}
 
