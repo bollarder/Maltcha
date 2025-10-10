@@ -1,0 +1,231 @@
+{
+  "messages": [
+    {
+      "timestamp": "2024. 1. 15. 오후 9:30",
+      "participant": "지우",
+      "content": "오늘 뭐했어?"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 9:32",
+      "participant": "민수",
+      "content": "회사에서 일하다가 막 퇴근했어 ㅠㅠ"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 9:33",
+      "participant": "지우",
+      "content": "힘들었겠다 ㅠㅠ 저녁은 먹었어?"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 9:35",
+      "participant": "민수",
+      "content": "아직 못먹었어.. 너는?"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 9:36",
+      "participant": "지우",
+      "content": "나도 이제 먹으려고! 같이 먹는 기분으로 먹자"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 9:37",
+      "participant": "민수",
+      "content": "ㅋㅋ 좋아 뭐 먹을건데?"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 9:38",
+      "participant": "지우",
+      "content": "치킨 시켰어 ㅎㅎ"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 9:40",
+      "participant": "민수",
+      "content": "오 나도 치킨 먹고싶다"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 9:41",
+      "participant": "지우",
+      "content": "그럼 너도 시켜! 같이 치맥하자"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 9:45",
+      "participant": "민수",
+      "content": "좋아 ㅋㅋ 주문했어"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:15",
+      "participant": "민수",
+      "content": "도착했다! 맛있게 먹는중 ㅎㅎ"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:16",
+      "participant": "지우",
+      "content": "나도!! 완전 꿀맛이야"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:20",
+      "participant": "민수",
+      "content": "다음엔 같이 먹으러 가자"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:21",
+      "participant": "지우",
+      "content": "좋아 ㅎㅎ 언제?"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:22",
+      "participant": "민수",
+      "content": "이번주 주말은 어때?"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:23",
+      "participant": "지우",
+      "content": "완전 좋아! 토요일?"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:24",
+      "participant": "민수",
+      "content": "ㅇㅇ 토요일 6시에 볼까?"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:25",
+      "participant": "지우",
+      "content": "좋아 그럼 토요일에 봐!"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:30",
+      "participant": "민수",
+      "content": "ㅇㅇ 잘자 ㅎㅎ"
+    },
+    {
+      "timestamp": "2024. 1. 15. 오후 10:31",
+      "participant": "지우",
+      "content": "응 너도 잘자!"
+    }
+  ],
+  "participants": [
+    "지우",
+    "민수"
+  ],
+  "stats": {
+    "totalMessages": 20,
+    "participants": 2,
+    "avgResponseTime": "3.2분",
+    "sentimentScore": 0
+  },
+  "charts": {
+    "messageFrequency": [
+      {
+        "date": "2024-01-15",
+        "count": 20
+      }
+    ],
+    "participantActivity": [
+      {
+        "name": "지우",
+        "count": 10
+      },
+      {
+        "name": "민수",
+        "count": 10
+      }
+    ],
+    "hourlyActivity": [
+      {
+        "hour": 0,
+        "count": 0
+      },
+      {
+        "hour": 1,
+        "count": 0
+      },
+      {
+        "hour": 2,
+        "count": 0
+      },
+      {
+        "hour": 3,
+        "count": 0
+      },
+      {
+        "hour": 4,
+        "count": 0
+      },
+      {
+        "hour": 5,
+        "count": 0
+      },
+      {
+        "hour": 6,
+        "count": 0
+      },
+      {
+        "hour": 7,
+        "count": 0
+      },
+      {
+        "hour": 8,
+        "count": 0
+      },
+      {
+        "hour": 9,
+        "count": 0
+      },
+      {
+        "hour": 10,
+        "count": 0
+      },
+      {
+        "hour": 11,
+        "count": 0
+      },
+      {
+        "hour": 12,
+        "count": 0
+      },
+      {
+        "hour": 13,
+        "count": 0
+      },
+      {
+        "hour": 14,
+        "count": 0
+      },
+      {
+        "hour": 15,
+        "count": 0
+      },
+      {
+        "hour": 16,
+        "count": 0
+      },
+      {
+        "hour": 17,
+        "count": 0
+      },
+      {
+        "hour": 18,
+        "count": 0
+      },
+      {
+        "hour": 19,
+        "count": 0
+      },
+      {
+        "hour": 20,
+        "count": 0
+      },
+      {
+        "hour": 21,
+        "count": 10
+      },
+      {
+        "hour": 22,
+        "count": 10
+      },
+      {
+        "hour": 23,
+        "count": 0
+      }
+    ]
+  },
+  "messageCount": 20
+}

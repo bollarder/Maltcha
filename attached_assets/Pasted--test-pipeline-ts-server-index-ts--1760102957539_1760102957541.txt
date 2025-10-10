@@ -1,0 +1,78 @@
+🔬 단계별 개발 및 검증 전략: test-pipeline.ts 스크립트 활용
+기존의 웹 서버 실행 로직(server/index.ts)과 별개로, 오직 파이프라인의 각 단계를 테스트하기 위한 별도의 스크립트 파일을 만드는 것이 핵심입니다.
+
+1. 테스트용 스크립트 파일 생성
+서버 디렉터리(server/) 안에 test-pipeline.ts 라는 새 파일을 만드세요. 이 파일은 웹 서버를 실행하지 않고, 터미널에서 직접 실행하여 각 서비스 모듈의 입출력을 확인할 용도로 사용됩니다.
+
+2. 단계별 테스트 및 결과물 파일로 저장하기
+test-pipeline.ts 파일에 아래와 같은 구조의 코드를 작성하여 한 단계씩 실행하고, 각 단계의 결과물을 .json 파일로 저장하여 직접 확인합니다.
+
+예시 test-pipeline.ts 코드:
+
+TypeScript
+
+// test-pipeline.ts
+
+import fs from 'fs/promises';
+import path from 'path';
+
+// 테스트할 서비스 모듈들을 import 합니다.
+import { parseKakaoTalk } from './services/kakao-parser';
+import { filterWithGemini } from './services/gemini-filter';
+import { summarizeAndProfile } from './services/gemini-batch-summary';
+// ... 다른 claude 서비스들도 필요에 따라 import
+
+// --------------------------------------------------
+// ▼▼▼ 이 함수 안에서 원하는 단계만 주석을 풀어서 테스트하세요. ▼▼▼
+// --------------------------------------------------
+async function runTest() {
+  try {
+    // 테스트용 대화 파일을 읽어옵니다.
+    const sampleChat = await fs.readFile(path.join(__dirname, 'sample.txt'), 'utf-8');
+    
+    // --- 단계 0: 카카오톡 파서 테스트 ---
+    const parsedResult = parseKakaoTalk(sampleChat);
+    await fs.writeFile('test_outputs/0_parsed.json', JSON.stringify(parsedResult, null, 2));
+    console.log('✅ 0단계: 파싱 완료. test_outputs/0_parsed.json 확인');
+
+    // --- 단계 1: Gemini 필터 테스트 ---
+    // const filteredResult = await filterWithGemini(parsedResult);
+    // await fs.writeFile('test_outputs/1_filtered.json', JSON.stringify(filteredResult, null, 2));
+    // console.log('✅ 1단계: 필터링 완료. test_outputs/1_filtered.json 확인');
+
+    // --- 단계 2: Gemini 프로파일러 테스트 ---
+    // const profilerResult = await summarizeAndProfile(filteredResult); // 또는 0_parsed.json을 직접 입력
+    // await fs.writeFile('test_outputs/2_profiler.json', JSON.stringify(profilerResult, null, 2));
+    // console.log('✅ 2단계: 프로파일링 완료. test_outputs/2_profiler.json 확인');
+
+    // --- 단계 3: Claude 심층분석 테스트 ---
+    // ... 이런 식으로 다음 단계를 계속 테스트 ...
+
+
+  } catch (error) {
+    console.error("테스트 중 오류 발생:", error);
+  }
+}
+
+// 스크립트 실행
+runTest();
+3. 실행 방법 및 개발 순서
+test_outputs 폴더 생성: 결과물이 저장될 폴더를 미리 만들어 둡니다.
+
+테스트 파일 준비: 실제 카카오톡 대화 내용이 담긴 sample.txt 파일을 server/ 폴더 안에 넣어둡니다.
+
+한 번에 한 단계씩 실행:
+
+처음에는 "단계 0" 코드만 남기고 나머지는 모두 주석 처리합니다.
+
+Replit의 Shell 탭에서 npx ts-node server/test-pipeline.ts 명령어를 입력하여 스크립트를 실행합니다.
+
+test_outputs 폴더에 생성된 0_parsed.json 파일을 열어 파싱이 원하는 대로 잘 되었는지 눈으로 확인합니다.
+
+점진적으로 다음 단계 진행:
+
+0단계 결과가 만족스러우면, 이제 "단계 1" 코드의 주석을 해제합니다.
+
+다시 스크립트를 실행하고, 생성된 1_filtered.json 파일의 내용이 올바른지 확인합니다. (개인정보가 잘 제거되었는지 등)
+
+이런 방식으로 Gemini 프로파일링 -> Claude 심층분석 -> Claude 코칭 순서로 각 단계의 결과물을 .json 파일로 확인하며 진행합니다.
