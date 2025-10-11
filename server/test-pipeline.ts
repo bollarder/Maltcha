@@ -10,6 +10,7 @@
  * 4. test_outputs/*.json 파일로 결과 확인
  */
 
+import 'dotenv/config';
 import fs from 'fs/promises';
 import path from 'path';
 
